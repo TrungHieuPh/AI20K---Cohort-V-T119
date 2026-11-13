@@ -1,2 +1,190 @@
 # zero-one-lexgate
-Legal chatbot audit gate: flags answers that contradict the law and cites the exact article and clause as evidence. Zero One Team · AIP-04
+
+Audit gate for legal chatbots. Give it a law and a batch of chatbot answers, and it flags every answer that contradicts the law, citing the exact article and clause as evidence.
+
+> **Status:** MVP in progress. Built by Zero One Team for hackathon topic AIP-04. The commands and file formats below are the interface the team is building toward.
+
+## Why
+
+Legal chatbots sound confident even when they are wrong. They give the wrong number of days, quote a repealed law, or invent a right that does not exist. Generic RAG metrics return a score, but they do not say which sentence is wrong or which article it breaks.
+
+lexgate checks each claim in an answer against the law text itself. It blocks the batch if any claim is wrong.
+
+## What the MVP does
+
+**Input**
+- The Vietnamese Labor Code 2019 (Law No. 45/2019/QH14, 220 articles).
+- A CSV of questions with the chatbot's answers.
+
+**For each answer**
+1. Split the answer into individual claims.
+2. Retrieve the most relevant articles of the law.
+3. Judge each claim against the retrieved text, and cite the article, clause and point it relies on.
+
+Each claim gets one of three labels:
+
+| Label | Meaning |
+|---|---|
+| `DUNG` (đúng) | Supported by the cited provision |
+| `TRAI_LUAT` (trái luật) | Contradicts the law |
+| `KHONG_CAN_CU` (không căn cứ) | The law text gives no basis for it |
+
+An answer is `SAI` (wrong) if any of its claims is not `DUNG`. The batch passes (`DAT`) only when no answer is `SAI`.
+
+**Error types it is built to catch.** The demo set plants 5 wrong answers among 20 questions, one of each type:
+
+| Error type | Example |
+|---|---|
+| Wrong number | Wrong notice period or overtime limit |
+| Outdated law | Quoting the 2012 Labor Code where the 2019 Code changed the rule |
+| Invented right | A benefit that no article grants |
+| Wrong article cited | The rule is right, but the article number is not |
+| Partly correct | One true claim mixed with one false claim |
+
+## How it works
+
+```
+Law text (Word/HTML from vbpl.vn)
+  └─ ingest: split at each "Điều N." → one chunk per article → embeddings → Qdrant (local)
+
+Q&A CSV
+  └─ audit: answer → claims → top-5 articles → LLM judge per claim (+ Ragas faithfulness)
+       └─ results.json → Streamlit UI
+```
+
+**Stack:** Python, Qdrant (local mode), LiteLLM, Ragas, Streamlit.
+
+## Repository layout
+
+```
+zero-one-lexgate/
+  data/law/              law text
+  data/test/             dev_set.csv, test_set.csv
+  core/ingest.py         build_index(law_path)
+  core/retrieve.py       retrieve(query, k=5) -> list[chunk + score]
+  core/audit.py          audit_one(cau_hoi, cau_tra_loi) -> dict
+                         run_audit(csv_path) -> results.json
+  eval/score.py          score(results_path, answer_key_path)
+  app/app.py             Streamlit UI
+  mock/mock_results.json sample output for UI development
+```
+
+## Getting started
+
+Requirements: Python 3.11+ and an API key for an LLM provider supported by LiteLLM.
+
+```bash
+git clone https://github.com/<owner>/zero-one-lexgate.git
+cd zero-one-lexgate
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env    # then add your model name and API key
+```
+
+`.env` is git-ignored. Never commit API keys.
+
+### Run
+
+```bash
+# 1. Build the index from the law text
+python -m core.ingest data/law/<law-file>
+
+# 2. Audit a CSV of answers (writes results.json)
+python -m core.audit data/test/dev_set.csv
+
+# 3. Score results against an answer key kept outside the repo
+python -m eval.score results.json <path/to/answer_key.csv>
+
+# UI
+streamlit run app/app.py
+```
+
+## Data formats
+
+**Input CSV.** Columns are `id`, `cau_hoi` (question) and `cau_tra_loi` (answer):
+
+```csv
+id,cau_hoi,cau_tra_loi
+1,"Người lao động có hợp đồng không xác định thời hạn phải báo trước bao nhiêu ngày khi nghỉ việc?","Chỉ cần báo trước 30 ngày."
+```
+
+**Answer key.** Columns are `id`, `nhan_that` (true label), `loai_loi` (error type), `dieu_dung` (correct article) and `ghi_chu` (notes). It is used only for scoring and is never committed.
+
+**Law chunk:**
+
+```json
+{
+  "chunk_id": "dieu-35",
+  "chuong": "III",
+  "dieu": 35,
+  "tieu_de": "Quyền đơn phương chấm dứt hợp đồng lao động của người lao động",
+  "noi_dung": "..."
+}
+```
+
+**`results.json`:**
+
+```json
+{
+  "tong_ket": {"so_cau": 20, "dung": 15, "sai": 5, "khong_can_cu": 0, "cong": "KHONG_DAT"},
+  "cau": [
+    {
+      "id": 1,
+      "ket_luan": "SAI",
+      "faithfulness": 0.0,
+      "cac_y": [
+        {
+          "noi_dung": "Chỉ cần báo trước 30 ngày",
+          "nhan": "TRAI_LUAT",
+          "trich_dan": "Điều 35 khoản 1 điểm a",
+          "bang_chung": "Ít nhất 45 ngày nếu làm việc theo hợp đồng lao động không xác định thời hạn",
+          "giai_thich": "Câu trả lời ghi 30 ngày, luật quy định ít nhất 45 ngày"
+        }
+      ],
+      "dieu_truy_hoi": ["dieu-35", "dieu-36"],
+      "thoi_gian_ms": 4200,
+      "chi_phi_usd": 0.002
+    }
+  ]
+}
+```
+
+## Evaluation
+
+The team tunes on one set and reports on another, so the reported numbers are not fitted to the test questions.
+
+- **Dev set:** 10 questions, open to the whole team for tuning.
+- **Test set:** 20 questions, 5 of them deliberately wrong. Only the evaluation owner holds its answer key, and it is never committed.
+- **Blind runs:** code is frozen first, then the test set is run twice to measure how stable the verdicts are.
+
+MVP targets:
+
+| Metric | Target |
+|---|---|
+| Wrong answers caught | ≥ 4 of 5 |
+| False alarms on correct answers | ≤ 1 of 15 |
+| Article cited for each caught answer | Correct in every case |
+| Same verdict across 2 runs | ≥ 19 of 20 |
+| Right article in top-5 retrieval (dev set) | ≥ 9 of 10 |
+| Time to audit 20 questions | ≤ 5 minutes |
+
+## Roadmap
+
+- An agent that diagnoses retrieval misses and tunes the pipeline (chunking, `k`, embedding model), scored with Ragas. This is the core of AIP-04.
+- Comparison of embedding models, starting with bge-m3.
+- Login and a Next.js frontend.
+
+## Team
+
+| Member | Role |
+|---|---|
+| Ngô Chí Vĩnh | Tech lead, claim verification (`core/audit.py`) |
+| Nguyễn Khắc Bảo | Law data and retrieval (`core/ingest.py`, `core/retrieve.py`), project management |
+| Lê Viết Khoa | Test sets, scoring (`eval/score.py`), demo |
+| Phan Trung Hiếu | Streamlit UI and deployment (`app/`) |
+
+## Disclaimer
+
+lexgate is a research prototype, not legal advice. The law text comes from the Vietnamese national legal database (vbpl.vn).

@@ -2,7 +2,7 @@
 
 Audit gate for legal chatbots. Give it a law and a batch of chatbot answers, and it flags every answer that contradicts the law, citing the exact article and clause as evidence.
 
-> **Status:** MVP in progress. Built by Zero One Team for hackathon topic AIP-04. The commands and file formats below are the interface the team is building toward.
+> **Status:** repository skeleton. Folders and empty placeholder files are in place on the `develop` branch, and the MVP is being built. Built by Zero One Team for hackathon topic AIP-04. The commands and file formats below are the interface the team is building toward.
 
 ## Why
 
@@ -29,7 +29,12 @@ Each claim gets one of three labels:
 | `TRAI_LUAT` (trái luật) | Contradicts the law |
 | `KHONG_CAN_CU` (không căn cứ) | The law text gives no basis for it |
 
-An answer is `SAI` (wrong) if any of its claims is not `DUNG`. The batch passes (`DAT`) only when no answer is `SAI`.
+Each answer then gets a verdict:
+- `SAI` (wrong) if any claim is `TRAI_LUAT`;
+- otherwise `KHONG_CAN_CU` if any claim is `KHONG_CAN_CU`;
+- otherwise `DUNG`.
+
+The chatbot passes (`DAT`) only when no answer is `SAI`.
 
 **Error types it is built to catch.** The demo set plants 5 wrong answers among 20 questions, one of each type:
 
@@ -58,24 +63,33 @@ Q&A CSV
 
 ```
 zero-one-lexgate/
-  data/law/              law text
-  data/test/             dev_set.csv, test_set.csv
-  core/ingest.py         build_index(law_path)
-  core/retrieve.py       retrieve(query, k=5) -> list[chunk + score]
-  core/audit.py          audit_one(cau_hoi, cau_tra_loi) -> dict
+  core/                  backend
+    ingest.py            build_index(law_path)                         Bảo
+    retrieve.py          retrieve(query, k=5) -> list[chunk + score]   Bảo
+    audit.py             audit_one(cau_hoi, cau_tra_loi) -> dict       Vĩnh
                          run_audit(csv_path) -> results.json
-  eval/score.py          score(results_path, answer_key_path)
-  app/app.py             Streamlit UI
-  mock/mock_results.json sample output for UI development
+  eval/
+    score.py             score(results_path, answer_key_path)          Khoa
+  app/
+    app.py               Streamlit UI, the MVP frontend                Hiếu
+  mock/
+    mock_results.json    sample output, so the UI can be built before the backend is ready
+  data/law/              law text
+  data/test/             dev_set.csv
+  .env.example           settings template; copy to .env
+  requirements.txt
 ```
+
+The backend and frontend live in this one repo. In week 2, `api/` (FastAPI wrapping `core/`) and `web/` (Next.js) are added alongside these folders, and nothing above has to move.
 
 ## Getting started
 
 Requirements: Python 3.11+ and an API key for an LLM provider supported by LiteLLM.
 
 ```bash
-git clone https://github.com/<owner>/zero-one-lexgate.git
+git clone https://github.com/TrungHieuPh/zero-one-lexgate.git
 cd zero-one-lexgate
+git switch develop
 python -m venv .venv
 # Windows: .venv\Scripts\activate
 # macOS/Linux: source .venv/bin/activate
@@ -84,6 +98,24 @@ cp .env.example .env    # then add your model name and API key
 ```
 
 `.env` is git-ignored. Never commit API keys.
+
+### Branches
+
+| Branch | Purpose |
+|---|---|
+| `main` | Stable. Updated only from `develop` at milestones such as the demo. |
+| `develop` | Integration. Everyone branches from here and merges back through a pull request. |
+| `feat/<area>` | One per person: `feat/retrieval` (Bảo), `feat/audit` (Vĩnh), `feat/eval` (Khoa), `feat/ui` (Hiếu). |
+
+```bash
+git switch develop
+git pull
+git switch -c feat/ui              # your own branch
+# ...work and commit...
+git push -u origin feat/ui         # then open a pull request into develop
+```
+
+Tell the whole team before changing a shared data format (see [Data formats](#data-formats)).
 
 ### Run
 
@@ -156,7 +188,7 @@ id,cau_hoi,cau_tra_loi
 The team tunes on one set and reports on another, so the reported numbers are not fitted to the test questions.
 
 - **Dev set:** 10 questions, open to the whole team for tuning.
-- **Test set:** 20 questions, 5 of them deliberately wrong. Only the evaluation owner holds its answer key, and it is never committed.
+- **Test set:** 20 questions, 5 of them deliberately wrong. Only the evaluation owner holds the test set and its answer key. Both are git-ignored (`data/test/test_set*.csv`, `answer_key*.csv`), so they never reach the repo.
 - **Blind runs:** code is frozen first, then the test set is run twice to measure how stable the verdicts are.
 
 MVP targets:
@@ -174,7 +206,7 @@ MVP targets:
 
 - An agent that diagnoses retrieval misses and tunes the pipeline (chunking, `k`, embedding model), scored with Ragas. This is the core of AIP-04.
 - Comparison of embedding models, starting with bge-m3.
-- Login and a Next.js frontend.
+- Login, a FastAPI backend in `api/` and a Next.js frontend in `web/`.
 
 ## Team
 

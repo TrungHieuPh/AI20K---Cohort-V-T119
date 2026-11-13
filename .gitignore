@@ -1,0 +1,22 @@
+# Secrets
+.env
+.streamlit/secrets.toml
+
+# Blind test: the answer key and test set stay with Khoa, never committed
+**/answer_key*.csv
+data/test/test_set*.csv
+
+# Local vector index and run outputs
+.qdrant/
+results*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

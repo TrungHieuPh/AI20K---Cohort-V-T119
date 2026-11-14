@@ -58,10 +58,10 @@ Law text (18/VBHN-VPQH, .doc → .txt)
 
 Q&A CSV
   └─ audit: answer → claims → top-5 articles (+ articles the answer cites) → LLM judge per claim → faithfulness from the claim labels
-       └─ results.json → Streamlit UI
+       └─ results.json → Next.js UI (web/)
 ```
 
-**Stack:** Python, Qdrant (local mode), LiteLLM, Ragas, Streamlit.
+**Stack:** Python, Qdrant (local mode), LiteLLM, Ragas, Next.js.
 
 ## Repository layout
 
@@ -76,8 +76,7 @@ zero-one-lexgate/
                          run_audit(csv_path) -> results.json
   eval/
     score.py             score(results_path, answer_key_path)          Khoa
-  app/
-    app.py               Streamlit UI, the MVP frontend                Hiếu
+  web/                   Next.js UI, the MVP frontend (reads results.json) Hiếu
   mock/
     mock_results.json    sample output, so the UI can be built before the backend is ready
   scripts/
@@ -87,12 +86,12 @@ zero-one-lexgate/
     law-data-and-retrieval.md   law data, vector index and retrieve() API: decisions, results, open items
   data/law/              18_VBHN-VPQH.doc (source), bo-luat-lao-dong-vbhn18.txt, dieu.jsonl,
                          dieu.BAAI__bge-m3.npz (cached article vectors)
-  data/test/             dev_set.csv, retrieval_smoke.csv
+  data/test/             dev_set.csv, dev_set_dap_an.csv, retrieval_smoke.csv
   .env.example           settings template; copy to .env
   requirements.txt
 ```
 
-The backend and frontend live in this one repo. In week 2, `api/` (FastAPI wrapping `core/`) and `web/` (Next.js) are added alongside these folders, and nothing above has to move.
+The backend and frontend live in this one repo. In week 2, `api/` (FastAPI wrapping `core/`) is added alongside these folders for login, upload and running audits from the UI, and nothing above has to move. Until then the UI only reads `results.json`; it never loads the embedding model.
 
 ## Getting started
 
@@ -151,8 +150,8 @@ python -m core.audit data/test/dev_set.csv
 python -m eval.score results.json <path/to/answer_key.csv> [--lan2 results_run2.json] [--out results_score.json]
 #    --lan2: a second run of the same CSV, to measure verdict stability. Dev set key: data/test/dev_set_dap_an.csv
 
-# UI
-streamlit run app/app.py
+# UI (Next.js, in web/; being built)
+cd web && npm install && npm run dev
 ```
 
 ## Data formats
@@ -253,7 +252,7 @@ MVP targets:
 
 - An agent that diagnoses retrieval misses and tunes the pipeline (chunking, `k`, embedding model), scored with Ragas. This is the core of AIP-04.
 - Comparison of embedding models, starting with bge-m3.
-- Login, a FastAPI backend in `api/` and a Next.js frontend in `web/`.
+- Login and a FastAPI backend in `api/` behind the Next.js frontend in `web/`.
 
 ## Team
 
@@ -262,7 +261,7 @@ MVP targets:
 | Ngô Chí Vĩnh | Claim verification (`core/audit.py`) |
 | Nguyễn Khắc Bào | Law data and retrieval (`core/ingest.py`, `core/retrieve.py`), project management |
 | Lê Viết Khoa | Test sets, scoring (`eval/score.py`), demo |
-| Phan Trung Hiếu | Streamlit UI and deployment (`app/`) |
+| Phan Trung Hiếu | Next.js UI and deployment (`web/`) |
 
 ## Disclaimer
 

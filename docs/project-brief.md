@@ -30,7 +30,7 @@ Phải có (theo thứ tự ưu tiên):
 4. **Chạy cả file:** `run_audit` trên tập dev 10 câu, ra `results.json` có `tong_ket` và cổng 3 mức. *(Code xong, chưa chạy thật.)*
 
 Nên có, nếu kịp:
-5. Giao diện Streamlit hiển thị kết quả *(Hiếu)*. Nếu chưa xong thì chiếu `results.json` hoặc output console.
+5. Giao diện Next.js (`web/`) hiển thị kết quả, chỉ đọc `results.json` *(Hiếu)*. Nếu chưa xong thì chiếu `results.json` hoặc output console.
 6. `score.py` chấm trên tập dev: bắt được bao nhiêu câu sai, báo nhầm bao nhiêu *(Khoa)*.
 
 **Kịch bản demo (khoảng 5 phút):**
@@ -69,7 +69,7 @@ CSV: id, cau_hoi, cau_tra_loi
 | **Bào** | Dữ liệu luật, ingest, `retrieve()`, `get_article()` | `feat/retrieval` | Xong, chưa merge vào `develop` |
 | **Vĩnh** | `core/audit.py`: `audit_one`, `run_audit` | `feat/audit` | Đã nối với retrieve thật (bge-m3 + Qdrant) và LLM thật (gpt-4.1-mini), 84 test pass. 4 câu demo ra đúng 4/4, ổn định qua 2 lần chạy. Chưa push |
 | **Khoa** | `eval/score.py`, tập dev và tập test | `feat/eval` | Hỏi Vĩnh |
-| **Hiếu** | `app/app.py` (Streamlit) | `feat/ui` | Hỏi Vĩnh |
+| **Hiếu** | `web/` (Next.js) | `feat/ui` | Chưa bắt đầu (`mock/mock_results.json` đã có dữ liệu thật để làm UI) |
 
 Tập test 20 câu và answer key do Khoa và Hiếu giữ kín. Vĩnh và Bào không được xem, để kết quả chạy mù là thật.
 

@@ -9,7 +9,7 @@ làm theo README. File này chỉ thêm ngữ cảnh và quy tắc làm việc c
 
 - Đề tài AIP-04 (AI Agent RAG Platform tự đánh giá & tối ưu chất lượng truy hồi – RAGAS), chương trình AI Thực chiến.
 - Mục tiêu trước mắt: MVP demo cho mentor (Chủ nhật). Bộ luật Lao động + CSV câu trả lời của chatbot
-  → kiểm từng ý, gán nhãn, trích Điều/khoản/điểm làm bằng chứng → `results.json` → giao diện Streamlit.
+  → kiểm từng ý, gán nhãn, trích Điều/khoản/điểm làm bằng chứng → `results.json` → giao diện Next.js (`web/`).
 - Mỗi người sở hữu một phần (xem bảng Team trong README). Chỉ sửa file của phần đang được giao;
   muốn đổi định dạng dữ liệu dùng chung (Data formats trong README) thì phải hỏi người dùng trước.
 
@@ -48,5 +48,5 @@ làm theo README. File này chỉ thêm ngữ cảnh và quy tắc làm việc c
 ## Hướng phát triển (để thiết kế không bị bó hẹp)
 
 Agent chẩn đoán lỗi truy hồi và tự tối ưu pipeline (cách cắt, `k`, embedding) chấm bằng Ragas; so sánh embedding;
-FastAPI (`api/`) + Next.js (`web/`); kiểm định lại khi luật thay đổi. Vì vậy giữ các bước ingest / retrieve / audit / score
+FastAPI (`api/`) phía sau Next.js (`web/`); kiểm định lại khi luật thay đổi. Vì vậy giữ các bước ingest / retrieve / audit / score
 tách biệt, cấu hình được, để thay thế từng phần mà không viết lại.

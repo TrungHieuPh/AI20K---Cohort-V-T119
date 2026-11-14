@@ -1,5 +1,7 @@
 # CLAUDE.md – zero-one-lexgate
 
+Đọc docs/project-brief.md trước mọi việc
+
 **README.md là nguồn sự thật của dự án.** Đọc README.md trước mọi việc. Khi file này và README khác nhau,
 làm theo README. File này chỉ thêm ngữ cảnh và quy tắc làm việc cho Claude Code.
 

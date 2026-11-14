@@ -133,3 +133,36 @@ export interface ScoreReport {
   theo_loai_loi: Record<string, { dat: number; tong: number }>
   chi_tiet: ScoreRow[]
 }
+
+/** One retrieved article in a chat answer (POST /api/chat, docs/api-hoi-dap.md §3). */
+export interface ChatArticle {
+  dieu: number
+  tieu_de: string
+  /** Cosine with Qdrant + bge-m3, unbounded with BM25: never compare to a fixed threshold. */
+  score: number | null
+  /** First 300 characters of the article, with "…" when cut. */
+  trich: string
+}
+
+/** Response of POST /api/chat. */
+export interface ChatResponse {
+  cau_hoi: string
+  cau_tra_loi: string
+  /** "Điều N khoản K điểm x"; empty when the bot declines. */
+  trich_dan: string[]
+  /** chunk_id of the retrieved articles, best first, e.g. "dieu-25". */
+  dieu_truy_hoi: string[]
+  thoi_gian_ms: number
+  /** null when LiteLLM has no price for the model. */
+  chi_phi_usd: number | null
+  /** The question is outside the Labor Code. */
+  tu_choi: boolean
+  /** Cited articles that were not retrieved: the answer needs checking. */
+  trich_dan_ngoai: number[]
+  cac_dieu: ChatArticle[]
+}
+
+/** Error body of the chat API: 422 gives FastAPI's list (or a string for a blank question), 502 a string. */
+export interface ChatApiError {
+  detail?: string | { type?: string; msg?: string; loc?: (string | number)[] }[]
+}

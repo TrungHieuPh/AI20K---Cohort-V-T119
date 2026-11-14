@@ -35,6 +35,8 @@ function crumbsFor(pathname: string): Crumb[] {
       ]
     case "quality":
       return [{ label: "Chất lượng" }]
+    case "chat":
+      return [{ label: "Hỏi đáp" }]
     case "law":
       if (!id) return [{ label: "Văn bản luật" }]
       return [

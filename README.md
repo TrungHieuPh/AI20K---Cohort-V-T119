@@ -96,7 +96,7 @@ The backend and frontend live in this one repo. In week 2, `api/` (FastAPI wrapp
 Requirements: Python 3.11+ and an API key for an LLM provider supported by LiteLLM.
 
 ```bash
-git clone https://github.com/TrungHieuPh/zero-one-lexgate.git
+git clone https://github.com/TrungHieuPh/AI20K_CohortV_T119.git zero-one-lexgate
 cd zero-one-lexgate
 git switch develop
 python -m venv .venv

@@ -148,7 +148,8 @@ python -m scripts.check_retrieval data/test/retrieval_smoke.csv
 python -m core.audit data/test/dev_set.csv
 
 # 3. Score results against an answer key kept outside the repo
-python -m eval.score results.json <path/to/answer_key.csv>
+python -m eval.score results.json <path/to/answer_key.csv> [--lan2 results_run2.json] [--out results_score.json]
+#    --lan2: a second run of the same CSV, to measure verdict stability. Dev set key: data/test/dev_set_dap_an.csv
 
 # UI
 streamlit run app/app.py

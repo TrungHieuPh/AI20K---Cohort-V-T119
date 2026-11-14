@@ -110,9 +110,19 @@ def _chuan_bi(nguon, llm_fn, k):
     return partial(answer_one, retrieve_fn=nguon.retrieve, llm_fn=llm_fn, k=k), nguon.ten, model
 
 
+CUM_TU_CHOI = (  # model hay diễn đạt lại câu cố định ("…không có quy định trực tiếp về việc X")
+    KHONG_CO_CAN_CU,
+    "không có quy định trực tiếp",
+    "bộ luật lao động không có quy định",
+    "bộ luật lao động không quy định",
+)
+
+
 def _la_tu_choi(cau_tra_loi):
-    """Câu trả lời có chứa câu "không có căn cứ" (bỏ qua dấu nháy, hoa thường, dấu câu, phần giải thích thêm)."""
-    return _chuan_hoa_chu(KHONG_CO_CAN_CU) in _chuan_hoa_chu(cau_tra_loi)
+    """Câu trả lời là từ chối "không có căn cứ": chứa câu cố định hoặc một cụm diễn đạt lại của nó
+    (bỏ qua dấu nháy, hoa thường, dấu câu, phần giải thích thêm)."""
+    van_ban = _chuan_hoa_chu(cau_tra_loi)
+    return any(_chuan_hoa_chu(cum) in van_ban for cum in CUM_TU_CHOI)
 
 
 def _trich_dan_ngoai(trich_dan, dieu_truy_hoi):

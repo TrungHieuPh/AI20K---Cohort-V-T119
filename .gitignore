@@ -13,6 +13,7 @@ data/test/test_set*.csv
 .qdrant*/
 results*.json
 results*.csv
+results_toi_uu/
 *.log
 
 # Embedding model cache, if HF_HOME is pointed inside the repo

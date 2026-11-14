@@ -332,3 +332,26 @@ def test_danh_dau_dieu_trich_ngoai_top_k(tmp_path):
                                          "dieu_truy_hoi": ["dieu-35", "dieu-36"]})
     assert kq["cau"][0]["trich_dan_ngoai"] == [99]
     assert kq["cau"][0]["tu_choi"] is False
+
+
+# --- Nhận diện câu từ chối khi model diễn đạt lại (thấy khi chạy thật server chat) --------------
+
+from core.answer import _la_tu_choi  # noqa: E402
+
+
+@pytest.mark.parametrize("cau", [
+    "Bộ luật Lao động không có quy định trực tiếp về việc nghỉ có lương vào ngày sinh nhật.",  # câu thật từ server
+    "Bộ luật Lao động không có quy định về thuế thu nhập cá nhân.",
+    "Bộ luật Lao động không quy định về cách tính thuế thu nhập cá nhân.",
+    "Văn bản được cung cấp không có quy định trực tiếp về vấn đề này.",
+])
+def test_nhan_ra_cau_tu_choi_dien_dat_lai(cau):
+    assert _la_tu_choi(cau) is True
+
+
+@pytest.mark.parametrize("cau", [
+    "Người lao động phải báo trước ít nhất 45 ngày, theo Điều 35 khoản 1 điểm a.",
+    "Bộ luật Lao động có quy định thời gian thử việc tối đa 60 ngày đối với trình độ cao đẳng (Điều 25).",
+])
+def test_cau_tra_loi_binh_thuong_khong_bi_coi_la_tu_choi(cau):
+    assert _la_tu_choi(cau) is False

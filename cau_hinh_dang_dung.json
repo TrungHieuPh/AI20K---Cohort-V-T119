@@ -1,0 +1,9 @@
+{
+  "ma": "k3-qdrant-gpt-4.1-mini",
+  "k": 3,
+  "retriever": "qdrant",
+  "model": "openai/gpt-4.1-mini",
+  "duyet_luc": "2026-11-14T21:19:26",
+  "nguoi_duyet": "Vĩnh",
+  "luot": "20261114-205932"
+}

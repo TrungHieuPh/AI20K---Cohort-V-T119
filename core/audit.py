@@ -24,6 +24,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 NHAN_HOP_LE = ("DUNG", "TRAI_LUAT", "KHONG_CAN_CU")
 TRUONG_Y = ("noi_dung", "nhan", "trich_dan", "bang_chung", "giai_thich")
 SO_DIEU_TRUY_HOI = 5
+DUONG_DAN_CAU_HINH = REPO_ROOT / "cau_hinh_dang_dung.json"  # cấu hình đã duyệt (eval.optimize duyet)
 SO_DIEU_TRICH_TOI_DA = 3  # số Điều chatbot tự trích được lấy thêm bằng get_article
 SO_LAN_THU = 4  # tổng số lần gọi LLM tối đa khi gặp lỗi 429
 CHO_GIAY = 2.0  # thời gian chờ lần đầu, nhân đôi mỗi lần
@@ -226,11 +227,24 @@ def _lay(obj, khoa):
 def _llm_mac_dinh(messages):
     """Gọi LLM qua LiteLLM, model lấy từ biến môi trường LLM_MODEL. Trả (nội dung, chi phí USD hoặc None)."""
     _nap_env()
-    import litellm
-
     model = os.getenv("LLM_MODEL")
     if not model:
         raise RuntimeError("Chưa cấu hình LLM_MODEL trong .env (xem .env.example)")
+    return _goi_llm(model, messages)
+
+
+def tao_llm(model):
+    """Hàm gọi LLM với model cố định (agent tối ưu thử nhiều model trong một lượt)."""
+    def _llm(messages):
+        _nap_env()
+        return _goi_llm(model, messages)
+
+    return _llm
+
+
+def _goi_llm(model, messages):
+    import litellm
+
     resp = litellm.completion(model=model, messages=messages, temperature=0)
     noi_dung = _lay(_lay(_lay(resp, "choices")[0], "message"), "content")
     try:
@@ -243,14 +257,16 @@ def _llm_mac_dinh(messages):
 Nguon = namedtuple("Nguon", "ten retrieve get_article")
 
 
-def chon_nguon():
-    """Chọn nguồn truy hồi theo RETRIEVER trong .env. Không tự chuyển nguồn khi lỗi.
+def chon_nguon(ten=None):
+    """Chọn nguồn truy hồi theo tên (hoặc RETRIEVER trong .env khi ten=None). Không tự chuyển nguồn khi lỗi.
 
-    Để trống (mặc định): core.retrieve của Bào (Qdrant + bge-m3). "bm25": core.retrieve_bm25 (tạm).
+    "" hoặc "qdrant" (mặc định): core.retrieve của Bào (Qdrant + bge-m3). "bm25": core.retrieve_bm25 (tạm).
     """
-    _nap_env()
-    ten = (os.getenv("RETRIEVER") or "").strip().lower()
-    if ten == "":
+    if ten is None:
+        _nap_env()
+        ten = os.getenv("RETRIEVER") or ""
+    ten = ten.strip().lower()
+    if ten in ("", "qdrant"):
         from core import retrieve
         from core.vectordb import COLLECTION, EMBED_MODEL
 
@@ -263,7 +279,7 @@ def chon_nguon():
     raise ValueError(f"RETRIEVER không hợp lệ: {ten!r}. Để trống (Qdrant) hoặc đặt bm25.")
 
 
-def audit_one(cau_hoi, cau_tra_loi, *, retrieve_fn=None, get_article_fn=None, llm_fn=None):
+def audit_one(cau_hoi, cau_tra_loi, *, retrieve_fn=None, get_article_fn=None, llm_fn=None, k=SO_DIEU_TRUY_HOI):
     """Kiểm một câu trả lời. Trả dict theo một phần tử của results.json["cau"] (chưa có "id").
 
     Judge nhận top-5 từ retrieve() cộng tối đa 3 Điều chatbot tự trích (lấy bằng get_article);
@@ -277,7 +293,7 @@ def audit_one(cau_hoi, cau_tra_loi, *, retrieve_fn=None, get_article_fn=None, ll
     if llm_fn is None:
         llm_fn = _llm_mac_dinh
     bat_dau = time.perf_counter()
-    chunks = retrieve_fn(f"{cau_hoi}\n{cau_tra_loi}", k=SO_DIEU_TRUY_HOI)
+    chunks = retrieve_fn(f"{cau_hoi}\n{cau_tra_loi}", k=k)
     can_cu = chunks + _lay_dieu_trich_them(cau_tra_loi, chunks, get_article_fn)
     van_ban, chi_phi = _goi_co_thu_lai(llm_fn, _tao_messages(cau_hoi, cau_tra_loi, can_cu))
     cac_y = _kiem_bang_chung(_chan_trich_dan_ngoai(_kiem_cac_y(_doc_json(van_ban)), can_cu), can_cu)
@@ -340,13 +356,13 @@ def _audit_mot_cau(audit_fn, id_, cau_hoi, cau_tra_loi):
     }
 
 
-def _kiem_cau_hinh_llm():
-    """Kiểm LLM_MODEL và API key của nhà cung cấp (không gọi mạng). Thiếu thì báo lỗi, trả tên model.
+def _kiem_cau_hinh_llm(model=None):
+    """Kiểm model (mặc định LLM_MODEL) và API key của nhà cung cấp (không gọi mạng). Thiếu thì báo lỗi, trả tên model.
 
     Biến *_API_KEY để trống trong .env bị coi là thiếu (LiteLLM coi biến rỗng là đã có key).
     """
     _nap_env()
-    model = (os.getenv("LLM_MODEL") or "").strip()
+    model = (model if model is not None else os.getenv("LLM_MODEL") or "").strip()
     if not model:
         raise RuntimeError("Chưa cấu hình LLM_MODEL trong .env (xem .env.example)")
     import litellm
@@ -363,29 +379,34 @@ def _kiem_cau_hinh_llm():
     return model
 
 
-def _chuan_bi_audit(nguon, llm_fn):
+def _chuan_bi_audit(nguon, llm_fn, k=SO_DIEU_TRUY_HOI, retriever=None, model=None):
     """Chuẩn bị một lượt chạy: chọn nguồn truy hồi một lần, kiểm cấu hình LLM, rồi chạy thử truy hồi
     để nạp model/mở index ngay. Hỏng chỗ nào thì dừng luôn (không ghi LOI cho từng câu,
     không chuyển sang nguồn khác). Kiểm LLM trước vì rẻ, nạp model bge-m3 mất vài chục giây.
     """
-    nguon = nguon or chon_nguon()
+    nguon = nguon or (chon_nguon(retriever) if retriever is not None else chon_nguon())
     log.info("Truy hồi: %s", nguon.ten)
-    if llm_fn is None:
+    if llm_fn is None and model is not None:
+        log.info("LLM: %s", _kiem_cau_hinh_llm(model))
+        llm_fn = tao_llm(model)
+    elif llm_fn is None:
         log.info("LLM: %s", _kiem_cau_hinh_llm())
         llm_fn = _llm_mac_dinh
     try:
         nguon.retrieve("kiểm tra truy hồi", k=1)
     except Exception as e:
         raise RuntimeError(f"Truy hồi không chạy được ({nguon.ten}): {e}") from e
-    return partial(audit_one, retrieve_fn=nguon.retrieve, get_article_fn=nguon.get_article, llm_fn=llm_fn)
+    return partial(audit_one, retrieve_fn=nguon.retrieve, get_article_fn=nguon.get_article, llm_fn=llm_fn, k=k)
 
 
-def run_audit(csv_path, out_path="results.json", *, audit_fn=None, nguon=None, llm_fn=None):
+def run_audit(csv_path, out_path="results.json", *, audit_fn=None, nguon=None, llm_fn=None,
+              k=SO_DIEU_TRUY_HOI, retriever=None, model=None):
     """Kiểm mọi câu trong CSV (id, cau_hoi, cau_tra_loi), ghi results.json, trả về dict kết quả.
 
     Nguồn truy hồi và cấu hình LLM được kiểm một lần khi bắt đầu; hỏng thì dừng ngay.
     Lỗi ở một câu: chạy lại câu đó 1 lần; vẫn lỗi thì ghi ket_luan "LOI" và thông báo vào "loi",
     rồi chạy tiếp câu sau. audit_fn, nguon, llm_fn để thay khi test.
+    k, retriever ("qdrant"/"bm25"), model: cấu hình (mặc định: k=5, RETRIEVER và LLM_MODEL trong .env).
     """
     with open(csv_path, encoding="utf-8-sig", newline="") as f:
         doc = csv.DictReader(f)
@@ -396,7 +417,7 @@ def run_audit(csv_path, out_path="results.json", *, audit_fn=None, nguon=None, l
     if not dong:
         raise ValueError(f"CSV không có câu nào để kiểm: {csv_path}")  # tránh cổng DAT rỗng
     if audit_fn is None:
-        audit_fn = _chuan_bi_audit(nguon, llm_fn)
+        audit_fn = _chuan_bi_audit(nguon, llm_fn, k=k, retriever=retriever, model=model)
 
     cau = []
     for i, d in enumerate(dong, 1):
@@ -423,7 +444,35 @@ def run_audit(csv_path, out_path="results.json", *, audit_fn=None, nguon=None, l
     return ket_qua
 
 
-def main(argv=None):
+CAC_KHOA_CAU_HINH = ("k", "retriever", "model")
+
+
+def doc_cau_hinh(path):
+    """Đọc cấu hình đang dùng (đã duyệt). Không có file → None; hỏng hoặc thiếu khoá → ValueError nêu tên file."""
+    path = Path(path)
+    if not path.exists():
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            ch = json.load(f)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"File cấu hình {path} không đọc được: {e}") from e
+    thieu = [k for k in CAC_KHOA_CAU_HINH if not isinstance(ch, dict) or k not in ch]
+    if thieu:
+        raise ValueError(f"File cấu hình {path} thiếu: {', '.join(thieu)}")
+    sai = []  # giá trị null/sai kiểu không được lặng lẽ quay về .env
+    if not (isinstance(ch["k"], int) and not isinstance(ch["k"], bool) and ch["k"] >= 1):
+        sai.append(f"k phải là số nguyên ≥ 1 (nhận {ch['k']!r})")
+    if not (isinstance(ch["retriever"], str) and ch["retriever"].strip().lower() in ("", "qdrant", "bm25")):
+        sai.append(f"retriever phải là qdrant hoặc bm25 (nhận {ch['retriever']!r})")
+    if not (isinstance(ch["model"], str) and ch["model"].strip()):
+        sai.append(f"model phải là tên model (nhận {ch['model']!r})")
+    if sai:
+        raise ValueError(f"File cấu hình {path} không hợp lệ: {'; '.join(sai)}")
+    return ch
+
+
+def main(argv=None, *, cau_hinh_path=DUONG_DAN_CAU_HINH):
     import argparse
 
     if hasattr(sys.stdout, "reconfigure"):
@@ -434,8 +483,13 @@ def main(argv=None):
     p.add_argument("csv_path", help="CSV có cột id, cau_hoi, cau_tra_loi")
     p.add_argument("--out", default="results.json", help="file kết quả (mặc định results.json)")
     a = p.parse_args(argv)
+    ch = doc_cau_hinh(cau_hinh_path)
+    tham_so = {}
+    if ch:
+        tham_so = {k: ch[k] for k in CAC_KHOA_CAU_HINH}
+        log.info("Cấu hình: %s (từ %s, ghi đè .env)", ch.get("ma", tham_so), Path(cau_hinh_path).name)
     try:
-        tk = run_audit(a.csv_path, a.out)["tong_ket"]
+        tk = run_audit(a.csv_path, a.out, **tham_so)["tong_ket"]
     finally:
         vectordb = sys.modules.get("core.vectordb")
         if vectordb is not None and vectordb.get_client.cache_info().currsize:

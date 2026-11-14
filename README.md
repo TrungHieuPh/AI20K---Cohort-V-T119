@@ -188,8 +188,11 @@ id,cau_hoi,cau_tra_loi
 
 Allowed values:
 - `cac_y[].nhan`: `DUNG`, `TRAI_LUAT`, `KHONG_CAN_CU`.
-- `cau[].ket_luan`: `DUNG`, `SAI`, `KHONG_CAN_CU`.
-- `tong_ket.cong`: `KHONG_DAT` (some answer is `SAI`), `CAN_XEM_LAI` (no `SAI`, but some answer is `KHONG_CAN_CU`), `DAT` (every answer is `DUNG`).
+- `cac_y[].ha_nhan`: present and `true` only when the system downgraded a `DUNG` claim to `KHONG_CAN_CU` because its citation is not among the retrieved articles. Absent otherwise.
+- `cau[].ket_luan`: `DUNG`, `SAI`, `KHONG_CAN_CU`, or `LOI` when the answer could not be audited (it is retried once first).
+- `cau[].loi`: present only when `ket_luan` is `LOI`; the error message.
+- `tong_ket.loi`: number of answers with `LOI`. Always `so_cau = dung + sai + khong_can_cu + loi`.
+- `tong_ket.cong`: `KHONG_DAT` (some answer is `SAI`), `CAN_XEM_LAI` (no `SAI`, but some answer is `KHONG_CAN_CU` or `LOI`), `DAT` (every answer is `DUNG`).
 
 ## Evaluation
 
@@ -200,8 +203,9 @@ The team tunes on one set and reports on another, so the reported numbers are no
 - **Blind runs:** code is frozen first, then the test set is run twice to measure how stable the verdicts are.
 
 **Scoring rule.** A verdict of `SAI` or `KHONG_CAN_CU` both count as flagging an answer:
-- A deliberately wrong answer is **caught** if its verdict is `SAI` or `KHONG_CAN_CU`, and **missed** if it is `DUNG`.
-- A correct answer is a **false alarm** if its verdict is `SAI` or `KHONG_CAN_CU`.
+- A deliberately wrong answer is **caught** if its verdict is `SAI` or `KHONG_CAN_CU`, and **missed** if it is `DUNG` or `LOI`.
+- A correct answer is a **false alarm** if its verdict is `SAI` or `KHONG_CAN_CU`. A correct answer with `LOI` is not a false alarm.
+- The number of `LOI` answers is reported separately.
 
 MVP targets:
 

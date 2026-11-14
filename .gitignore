@@ -1,5 +1,7 @@
 # Secrets
 .env
+.env.*
+!.env.example
 .streamlit/secrets.toml
 
 # Blind test: the answer key and test set stay with Khoa, never committed
@@ -7,8 +9,17 @@
 data/test/test_set*.csv
 
 # Local vector index and run outputs
-.qdrant/
+# (.qdrant*/ also covers a custom QDRANT_PATH such as .qdrant_test/)
+.qdrant*/
 results*.json
+*.log
+
+# Embedding model cache, if HF_HOME is pointed inside the repo
+.cache/
+hf_cache/
+
+# Working files kept outside the repo (question-writing helper spreadsheets)
+data/**/*.xlsx
 
 # Python
 __pycache__/
@@ -16,7 +27,13 @@ __pycache__/
 .venv/
 venv/
 .ipynb_checkpoints/
+.pytest_cache/
 
-# OS
+# Editors
+.vscode/
+.idea/
+
+# OS and Office lock files (opening data/law/*.doc in Word creates ~$ files)
 .DS_Store
 Thumbs.db
+~$*

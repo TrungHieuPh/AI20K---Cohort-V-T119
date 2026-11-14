@@ -13,7 +13,7 @@ lexgate checks each claim in an answer against the law text itself. It blocks th
 ## What the MVP does
 
 **Input**
-- The Vietnamese Labor Code, consolidated text No. 18/VBHN-VPQH dated 12/02/2026: Law No. 45/2019/QH14 as amended by Laws No. 71/2025/QH15, 113/2025/QH15 and 124/2025/QH15. Source: vbpl.vn.
+- The Vietnamese Labor Code 2019 (Law No. 45/2019/QH14, 220 articles), in its consolidated text 18/VBHN-VPQH of 12/02/2026. That text includes the 2025 amendments to Articles 59, 61, 139 and 154. Data cut-off: 14/11/2026. The amending laws are No. 71/2025/QH15, 113/2025/QH15 and 124/2025/QH15.
 - A CSV of questions with the chatbot's answers.
 
 **For each answer**
@@ -52,8 +52,9 @@ The batch then gets a gate decision (`cong`) with three levels:
 ## How it works
 
 ```
-Law text (consolidated 18/VBHN-VPQH, Word/HTML from vbpl.vn)
-  └─ ingest: split at each "Điều N." → one chunk per article → embeddings → Qdrant (local)
+Law text (18/VBHN-VPQH, .doc → .txt)
+  └─ scripts/split_law.py: split at each "Điều N." → data/law/dieu.jsonl (one line per article)
+       └─ ingest: chapter/section header + article → bge-m3 embeddings (1024-d, cosine) → Qdrant (local)
 
 Q&A CSV
   └─ audit: answer → claims → top-5 articles → LLM judge per claim (+ Ragas faithfulness)
@@ -67,8 +68,10 @@ Q&A CSV
 ```
 zero-one-lexgate/
   core/                  backend
-    ingest.py            build_index(law_path)                         Bảo
-    retrieve.py          retrieve(query, k=5) -> list[chunk + score]   Bảo
+    vectordb.py          settings, embedder, Qdrant client (shared)    Bào
+    ingest.py            build_index(law_path)                         Bào
+    retrieve.py          retrieve(query, k=5) -> list[chunk + score]   Bào
+                         get_article("Điều 35") -> chunk | None
     audit.py             audit_one(cau_hoi, cau_tra_loi) -> dict       Vĩnh
                          run_audit(csv_path) -> results.json
   eval/
@@ -77,8 +80,14 @@ zero-one-lexgate/
     app.py               Streamlit UI, the MVP frontend                Hiếu
   mock/
     mock_results.json    sample output, so the UI can be built before the backend is ready
-  data/law/              law text
-  data/test/             dev_set.csv
+  scripts/
+    split_law.py         law .txt -> dieu.jsonl
+    check_retrieval.py   Hit@k / MRR of retrieve() on a question -> article CSV
+  docs/
+    law-data-and-retrieval.md   law data, vector index and retrieve() API: decisions, results, open items
+  data/law/              18_VBHN-VPQH.doc (source), bo-luat-lao-dong-vbhn18.txt, dieu.jsonl,
+                         dieu.BAAI__bge-m3.npz (cached article vectors)
+  data/test/             dev_set.csv, retrieval_smoke.csv
   .env.example           settings template; copy to .env
   requirements.txt
 ```
@@ -90,7 +99,7 @@ The backend and frontend live in this one repo. In week 2, `api/` (FastAPI wrapp
 Requirements: Python 3.11+ and an API key for an LLM provider supported by LiteLLM.
 
 ```bash
-git clone https://github.com/TrungHieuPh/zero-one-lexgate.git
+git clone https://github.com/TrungHieuPh/AI20K_CohortV_T119.git zero-one-lexgate
 cd zero-one-lexgate
 git switch develop
 python -m venv .venv
@@ -108,7 +117,7 @@ cp .env.example .env    # then add your model name and API key
 |---|---|
 | `main` | Stable. Updated only from `develop` at milestones such as the demo. |
 | `develop` | Integration. Everyone branches from here and merges back through a pull request. |
-| `feat/<area>` | One per person: `feat/retrieval` (Bảo), `feat/audit` (Vĩnh), `feat/eval` (Khoa), `feat/ui` (Hiếu). |
+| `feat/<area>` | One per person: `feat/retrieval` (Bào), `feat/audit` (Vĩnh), `feat/eval` (Khoa), `feat/ui` (Hiếu). |
 
 ```bash
 git switch develop
@@ -124,7 +133,16 @@ Tell the whole team before changing a shared data format (see [Data formats](#da
 
 ```bash
 # 1. Build the index from the law text
-python -m core.ingest data/law/<law-file>
+#    Vectors are committed in data/law/dieu.BAAI__bge-m3.npz, so this takes about a second
+#    and does not load the model. Only new or edited articles are re-embedded.
+python -m core.ingest data/law/dieu.jsonl
+
+#    Querying needs BAAI/bge-m3 locally (about 4.3 GB, downloaded on first use).
+#    See docs/law-data-and-retrieval.md for copying the model cache on a slow network.
+
+#    Check retrieval: is the right article in the top 5?
+python -m core.retrieve "nghỉ việc phải báo trước bao nhiêu ngày"
+python -m scripts.check_retrieval data/test/retrieval_smoke.csv
 
 # 2. Audit a CSV of answers (writes results.json)
 python -m core.audit data/test/dev_set.csv
@@ -153,11 +171,20 @@ id,cau_hoi,cau_tra_loi
 {
   "chunk_id": "dieu-35",
   "chuong": "III",
+  "ten_chuong": "HỢP ĐỒNG LAO ĐỘNG",
+  "muc": "Mục 3. CHẤM DỨT HỢP ĐỒNG LAO ĐỘNG",
   "dieu": 35,
   "tieu_de": "Quyền đơn phương chấm dứt hợp đồng lao động của người lao động",
-  "noi_dung": "..."
+  "noi_dung": "Điều 35. ...\n1. ...\na) Ít nhất 45 ngày ...",
+  "so_khoan": 2,
+  "sua_doi": [],
+  "nguon": "Bộ luật Lao động – VBHN 18/VBHN-VPQH ngày 12/02/2026"
 }
 ```
+
+`retrieve()` returns this dict, plus `score` (cosine) and `chi_tham_chieu`. Article 219 has `chi_tham_chieu: true` because it quotes amendments to other laws. It is skipped by default search and can still be fetched with `get_article(219)`.
+
+The index runs in Qdrant local mode (`.qdrant/`, git-ignored), and only one process can open it at a time. To use a Qdrant server instead, set `QDRANT_URL` in `.env`.
 
 **`results.json`:**
 
@@ -229,10 +256,10 @@ MVP targets:
 | Member | Role |
 |---|---|
 | Ngô Chí Vĩnh | Tech lead, claim verification (`core/audit.py`) |
-| Nguyễn Khắc Bảo | Law data and retrieval (`core/ingest.py`, `core/retrieve.py`), project management |
+| Nguyễn Khắc Bào | Law data and retrieval (`core/ingest.py`, `core/retrieve.py`), project management |
 | Lê Viết Khoa | Test sets, scoring (`eval/score.py`), demo |
 | Phan Trung Hiếu | Streamlit UI and deployment (`app/`) |
 
 ## Disclaimer
 
-lexgate is a research prototype, not legal advice. The law text comes from the Vietnamese national legal database (vbpl.vn).
+lexgate is a research prototype, not legal advice. The law text is the consolidated document 18/VBHN-VPQH issued by the Office of the National Assembly, as published in the Official Gazette (congbao.chinhphu.vn).

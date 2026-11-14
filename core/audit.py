@@ -47,6 +47,28 @@ Chỉ trả về JSON đúng dạng sau, không thêm chữ nào khác:
 "bang_chung": "...", "giai_thich": "..."}]}"""
 
 
+def _ti_le_dung(cac_y):
+    """Tỉ lệ ý có nhãn DUNG trên tổng số ý, chưa làm tròn. cac_y phải khác rỗng."""
+    return sum(y["nhan"] == "DUNG" for y in cac_y) / len(cac_y)
+
+
+def _faithfulness(cac_y):
+    """Tỉ lệ ý có căn cứ (nhãn DUNG) trên tổng số ý, làm tròn 2 chữ số.
+
+    Theo định nghĩa faithfulness của Ragas (ý có căn cứ / tổng ý), tính từ nhãn cuối của audit
+    (sau bước chặn trích dẫn), không gọi thư viện Ragas. cac_y luôn khác rỗng (_kiem_cac_y đã kiểm).
+    """
+    return round(_ti_le_dung(cac_y), 2)
+
+
+def _faithfulness_chua_lam_tron(c):
+    """Giá trị để lấy trung bình: tính lại từ nhãn nếu có cac_y (để trung bình trên số chưa làm tròn),
+    không thì dùng faithfulness đã lưu; câu LOI cho None."""
+    if c.get("ket_luan") == "LOI":
+        return None
+    return _ti_le_dung(c["cac_y"]) if c.get("cac_y") else c.get("faithfulness")
+
+
 def _ket_luan(cac_nhan):
     if "TRAI_LUAT" in cac_nhan:
         return "SAI"
@@ -261,7 +283,7 @@ def audit_one(cau_hoi, cau_tra_loi, *, retrieve_fn=None, get_article_fn=None, ll
     cac_y = _kiem_bang_chung(_chan_trich_dan_ngoai(_kiem_cac_y(_doc_json(van_ban)), can_cu), can_cu)
     return {
         "ket_luan": _ket_luan([y["nhan"] for y in cac_y]),
-        "faithfulness": None,
+        "faithfulness": _faithfulness(cac_y),
         "cac_y": cac_y,
         "dieu_truy_hoi": [c["chunk_id"] for c in chunks],
         "thoi_gian_ms": round((time.perf_counter() - bat_dau) * 1000),
@@ -275,6 +297,12 @@ COT_CSV = ("id", "cau_hoi", "cau_tra_loi")
 def _doc_id(gia_tri):
     gia_tri = gia_tri.strip()
     return int(gia_tri) if gia_tri.isdigit() else gia_tri
+
+
+def _trung_binh(gia_tri):
+    """Trung bình các giá trị khác None (câu LOI có faithfulness None nên bị bỏ qua), làm tròn 2 chữ số."""
+    co = [g for g in gia_tri if g is not None]
+    return round(sum(co) / len(co), 2) if co else None
 
 
 def _cong(cac_ket_luan):
@@ -382,6 +410,7 @@ def run_audit(csv_path, out_path="results.json", *, audit_fn=None, nguon=None, l
         "sai": cac_ket_luan.count("SAI"),
         "khong_can_cu": cac_ket_luan.count("KHONG_CAN_CU"),
         "loi": cac_ket_luan.count("LOI"),
+        "faithfulness_tb": _trung_binh([_faithfulness_chua_lam_tron(c) for c in cau]),
         "cong": _cong(cac_ket_luan),
     }
     if tong_ket["dung"] + tong_ket["sai"] + tong_ket["khong_can_cu"] + tong_ket["loi"] != tong_ket["so_cau"]:

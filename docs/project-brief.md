@@ -80,7 +80,7 @@ Tập test 20 câu và answer key do Khoa và Hiếu giữ kín. Vĩnh và Bào 
 - **Không fallback âm thầm.** Mặc định chỉ dùng `retrieve()` thật, lỗi thì báo ngay. BM25 chỉ chạy khi `.env` có `RETRIEVER=bm25`. Model chỉ nạp 1 lần cho mỗi lượt chạy. `HF_HUB_OFFLINE=1`.
 - Mỗi câu gọi LLM 1 lần, temperature 0, gặp 429 thì thử lại, lỗi khác thì báo luôn. Câu lỗi được chạy lại 1 lần, vẫn lỗi thì ghi `LOI`.
 - Chặn trích dẫn: ý được chấm `DUNG` nhưng trích Điều không nằm trong top-5 hoặc trong các Điều đã lấy bằng `get_article` thì hạ xuống `KHONG_CAN_CU`, đặt `ha_nhan: true`.
-- `faithfulness` để `null`. Ragas là phần cộng thêm, làm sau.
+- `faithfulness` = số ý `DUNG` / tổng số ý (làm tròn 2 chữ số), tính từ nhãn của audit theo định nghĩa của Ragas, không gọi thư viện Ragas; `tong_ket.faithfulness_tb` là trung bình (bỏ qua câu `LOI`). Ragas thật dùng để đo bộ truy hồi và RAG của nhóm, so sánh cấu hình: bước riêng `eval/ragas_eval.py`, cài trong `requirements-eval.txt` và venv riêng (tuần 2–3). Context precision/recall chạy trên tập có `dieu_dung`.
 - Chấm điểm: câu cố tình sai ra `SAI` hoặc `KHONG_CAN_CU` thì tính là bắt được; ra `DUNG` hoặc `LOI` thì tính là bỏ sót. Câu đúng ra `SAI` hoặc `KHONG_CAN_CU` thì tính là báo nhầm; ra `LOI` thì đếm riêng.
 - Mục tiêu MVP: bắt ≥ 4/5 câu sai, báo nhầm ≤ 1/15, ổn định ≥ 19/20 giữa 2 lần chạy, Điều đúng nằm trong top-5 ≥ 9/10, chạy hết 20 câu ≤ 5 phút.
 

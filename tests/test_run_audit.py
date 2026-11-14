@@ -264,3 +264,54 @@ def test_cau_hinh_llm_du_thi_ghi_log_model_va_chay_tiep(tmp_path, env_llm, caplo
         kq = chay()
     assert kq["tong_ket"]["cong"] == "DAT"
     assert any("gia/model-gia" in r.getMessage() for r in caplog.records)
+
+
+# --- tong_ket.faithfulness_tb -----------------------------------------------------
+
+def audit_faithfulness(cau_tra_loi_sang_faithfulness):
+    """Audit giả: cau_tra_loi "LOI" thì ném lỗi; còn lại trả DUNG với faithfulness tra theo bảng."""
+
+    def _audit(cau_hoi, cau_tra_loi):
+        if cau_tra_loi == "LOI":
+            raise ValueError("lỗi giả")
+        return {**audit_gia(cau_hoi, "DUNG"), "faithfulness": cau_tra_loi_sang_faithfulness[cau_tra_loi]}
+
+    return _audit
+
+
+def chay_faithfulness(tmp_path, cac_cau, bang):
+    csv_path = ghi_csv(tmp_path / "in.csv", [(i, "q", a) for i, a in enumerate(cac_cau, 1)])
+    return run_audit(csv_path, tmp_path / "r.json", audit_fn=audit_faithfulness(bang))["tong_ket"]
+
+
+def test_faithfulness_tb_la_trung_binh_cac_cau(tmp_path):
+    tk = chay_faithfulness(tmp_path, ["a", "b", "c"], {"a": 1.0, "b": 0.5, "c": 0.0})
+    assert tk["faithfulness_tb"] == 0.5
+
+
+def test_faithfulness_tb_bo_qua_cau_loi(tmp_path):
+    assert chay_faithfulness(tmp_path, ["a", "LOI"], {"a": 1.0})["faithfulness_tb"] == 1.0
+
+
+@pytest.mark.parametrize("cac_cau, bang", [(["LOI", "LOI"], {}), (["a"], {"a": None})],
+                         ids=["toan_cau_loi", "faithfulness_none"])
+def test_faithfulness_tb_null_khi_khong_cau_nao_co_gia_tri(tmp_path, cac_cau, bang):
+    assert chay_faithfulness(tmp_path, cac_cau, bang)["faithfulness_tb"] is None
+
+
+def test_faithfulness_tb_tinh_tu_gia_tri_chua_lam_tron(tmp_path):
+    """1/3, 1/3, 1.0: trung bình chưa làm tròn = 0.5556 → 0.56 (trung bình các giá trị đã làm tròn sẽ ra 0.55)."""
+    def y_(nhan):
+        return {"noi_dung": "ý", "nhan": nhan, "trich_dan": "", "bang_chung": "", "giai_thich": ""}
+
+    bang = {"a": ["DUNG", "TRAI_LUAT", "TRAI_LUAT"], "b": ["DUNG", "KHONG_CAN_CU", "TRAI_LUAT"], "c": ["DUNG"]}
+
+    def audit_fn(cau_hoi, cau_tra_loi):
+        cac_y = [y_(n) for n in bang[cau_tra_loi]]
+        return {**audit_gia(cau_hoi, "DUNG"), "cac_y": cac_y,
+                "faithfulness": round(sum(y["nhan"] == "DUNG" for y in cac_y) / len(cac_y), 2)}
+
+    csv_path = ghi_csv(tmp_path / "in.csv", [(1, "q", "a"), (2, "q", "b"), (3, "q", "c")])
+    kq = run_audit(csv_path, tmp_path / "r.json", audit_fn=audit_fn)
+    assert [c["faithfulness"] for c in kq["cau"]] == [0.33, 0.33, 1.0]
+    assert kq["tong_ket"]["faithfulness_tb"] == 0.56

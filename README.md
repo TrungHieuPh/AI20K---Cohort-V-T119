@@ -57,7 +57,7 @@ Law text (18/VBHN-VPQH, .doc → .txt)
        └─ ingest: chapter/section header + article → bge-m3 embeddings (1024-d, cosine) → Qdrant (local)
 
 Q&A CSV
-  └─ audit: answer → claims → top-5 articles → LLM judge per claim (+ Ragas faithfulness)
+  └─ audit: answer → claims → top-5 articles (+ articles the answer cites) → LLM judge per claim → faithfulness from the claim labels
        └─ results.json → Streamlit UI
 ```
 
@@ -190,7 +190,7 @@ The index runs in Qdrant local mode (`.qdrant/`, git-ignored), and only one proc
 
 ```json
 {
-  "tong_ket": {"so_cau": 20, "dung": 15, "sai": 5, "khong_can_cu": 0, "cong": "KHONG_DAT"},
+  "tong_ket": {"so_cau": 20, "dung": 15, "sai": 5, "khong_can_cu": 0, "loi": 0, "faithfulness_tb": 0.75, "cong": "KHONG_DAT"},
   "cau": [
     {
       "id": 1,
@@ -219,7 +219,9 @@ Allowed values:
 - `cac_y[].bang_chung_khop`: present and `false` only when `bang_chung` is not a verbatim quote of the cited article (compared word by word, ignoring case and punctuation; the judge may elide with `...`). A warning only: the label is not changed. Absent otherwise.
 - `cau[].ket_luan`: `DUNG`, `SAI`, `KHONG_CAN_CU`, or `LOI` when the answer could not be audited (it is retried once first).
 - `cau[].loi`: present only when `ket_luan` is `LOI`; the error message.
+- `cau[].faithfulness`: share of the answer's claims labelled `DUNG` (supported claims / all claims), rounded to 2 decimals; `null` when `ket_luan` is `LOI`. This follows the Ragas definition of faithfulness but is computed from the audit's own labels (after the citation check), not by calling the Ragas library.
 - `tong_ket.loi`: number of answers with `LOI`. Always `so_cau = dung + sai + khong_can_cu + loi`.
+- `tong_ket.faithfulness_tb`: mean `faithfulness` over the answers that have one (answers with `LOI` are skipped), rounded to 2 decimals; `null` if none has a value. It reads as "share of claims that have a basis in the law text", not as a legal-correctness score: `TRAI_LUAT` and `KHONG_CAN_CU` claims both count as unsupported.
 - `tong_ket.cong`: `KHONG_DAT` (some answer is `SAI`), `CAN_XEM_LAI` (no `SAI`, but some answer is `KHONG_CAN_CU` or `LOI`), `DAT` (every answer is `DUNG`).
 
 ## Evaluation

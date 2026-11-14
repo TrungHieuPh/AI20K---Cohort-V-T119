@@ -428,3 +428,25 @@ def test_bang_chung_trai_luat_cung_duoc_kiem():
 
 def test_bang_chung_rong_thi_khong_kiem():
     assert "bang_chung_khop" not in chay_bang_chung("", trich_dan="", nhan="KHONG_CAN_CU")
+
+
+# --- faithfulness = số ý DUNG / tổng số ý (từ nhãn audit, không gọi Ragas) ----------
+
+@pytest.mark.parametrize(
+    "nhan_cac_y, faithfulness",
+    [
+        (["DUNG"], 1.0),
+        (["DUNG", "TRAI_LUAT"], 0.5),
+        (["DUNG", "KHONG_CAN_CU", "TRAI_LUAT"], 0.33),
+        (["DUNG", "DUNG", "KHONG_CAN_CU"], 0.67),
+        (["TRAI_LUAT"], 0.0),
+    ],
+)
+def test_faithfulness_la_ti_le_y_dung(nhan_cac_y, faithfulness):
+    assert chay([y(n) for n in nhan_cac_y])["faithfulness"] == faithfulness
+
+
+def test_y_bi_ha_nhan_khong_tinh_la_dung_trong_faithfulness(env_rieng):
+    kq, _, _ = chay_trich("Theo Điều 50.", cac_y=[y("DUNG", trich_dan="Điều 60"), y("DUNG")])
+    assert kq["cac_y"][0]["ha_nhan"] is True
+    assert kq["faithfulness"] == 0.5

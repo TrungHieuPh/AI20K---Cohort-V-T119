@@ -6,13 +6,14 @@
     "sai": 2,
     "khong_can_cu": 1,
     "loi": 0,
+    "faithfulness_tb": 0.38,
     "cong": "KHONG_DAT"
   },
   "cau": [
     {
       "id": 1,
       "ket_luan": "DUNG",
-      "faithfulness": null,
+      "faithfulness": 1.0,
       "cac_y": [
         {
           "noi_dung": "Người lao động phải báo trước cho người sử dụng lao động ít nhất 45 ngày khi làm hợp đồng lao động không xác định thời hạn muốn nghỉ việc.",
@@ -35,7 +36,7 @@
     {
       "id": 2,
       "ket_luan": "SAI",
-      "faithfulness": null,
+      "faithfulness": 0.0,
       "cac_y": [
         {
           "noi_dung": "Người lao động được làm thêm không quá 300 giờ trong 01 năm.",
@@ -59,7 +60,7 @@
     {
       "id": 3,
       "ket_luan": "KHONG_CAN_CU",
-      "faithfulness": null,
+      "faithfulness": 0.5,
       "cac_y": [
         {
           "noi_dung": "Người lao động làm công việc bình thường được nghỉ 12 ngày làm việc mỗi năm, hưởng nguyên lương.",
@@ -89,7 +90,7 @@
     {
       "id": 4,
       "ket_luan": "SAI",
-      "faithfulness": null,
+      "faithfulness": 0.0,
       "cac_y": [
         {
           "noi_dung": "Lao động nữ được nghỉ thai sản 06 tháng cho mọi lần sinh, không phân biệt con thứ mấy.",

@@ -99,7 +99,7 @@ def test_dong_lenh_ghi_results_json(tmp_path, monkeypatch):
     monkeypatch.setattr(audit, "_kiem_cau_hinh_llm", lambda: "gia/model-gia")
     monkeypatch.setattr(audit, "audit_one", lambda cau_hoi, cau_tra_loi, **kw: audit_gia(cau_hoi, cau_tra_loi))
     monkeypatch.chdir(tmp_path)
-    audit.main([str(csv_path)])
+    audit.main([str(csv_path)], cau_hinh_path=tmp_path / "khong_co.json")
     kq = json.loads((tmp_path / "results.json").read_text(encoding="utf-8"))
     assert kq["tong_ket"]["cong"] == "KHONG_DAT"
 
@@ -327,3 +327,86 @@ def test_moi_cau_co_cau_hoi_va_cau_tra_loi_ngay_sau_id(tmp_path):
     assert list(kq["cau"][0])[:3] == ["id", "cau_hoi", "cau_tra_loi"]
     tren_dia = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
     assert tren_dia["cau"][1]["cau_hoi"] == "Hỏi hai"
+
+
+# --- Cấu hình truyền vào run_audit và đọc cau_hinh_dang_dung.json ---------------------
+
+def test_run_audit_truyen_k_xuong_retrieve(tmp_path):
+    from core.audit import Nguon
+
+    k_nhan = []
+
+    def retrieve(query, k=5):
+        k_nhan.append(k)
+        return [{"chunk_id": "dieu-35", "dieu": 35, "tieu_de": "[GIẢ]", "noi_dung": "[GIẢ]"}]
+
+    csv_path = ghi_csv(tmp_path / "in.csv", [(1, "q", "a")])
+    run_audit(csv_path, tmp_path / "r.json", nguon=Nguon("giả", retrieve, lambda d: None), llm_fn=llm_gia, k=8)
+    assert k_nhan == [1, 8]  # 1 lần chạy thử, rồi k=8 cho câu
+
+
+def test_run_audit_chon_nguon_va_model_theo_ten(tmp_path, monkeypatch):
+    from core.audit import Nguon
+
+    goi = {}
+    monkeypatch.setattr(audit, "chon_nguon", lambda ten=None: goi.setdefault("nguon", ten) and Nguon(
+        "giả", lambda q, k=5: [{"chunk_id": "dieu-35", "dieu": 35, "tieu_de": "", "noi_dung": ""}], lambda d: None))
+    monkeypatch.setattr(audit, "_kiem_cau_hinh_llm", lambda model=None: goi.setdefault("kiem", model))
+    monkeypatch.setattr(audit, "tao_llm", lambda model: goi.setdefault("llm", model) and llm_gia)
+    csv_path = ghi_csv(tmp_path / "in.csv", [(1, "q", "a")])
+    run_audit(csv_path, tmp_path / "r.json", retriever="bm25", model="openai/gpt-4o-mini")
+    assert goi == {"nguon": "bm25", "kiem": "openai/gpt-4o-mini", "llm": "openai/gpt-4o-mini"}
+
+
+def test_doc_cau_hinh(tmp_path):
+    from core.audit import doc_cau_hinh
+
+    assert doc_cau_hinh(tmp_path / "khong_co.json") is None
+    tot = tmp_path / "tot.json"
+    tot.write_text(json.dumps({"k": 3, "retriever": "qdrant", "model": "openai/gpt-4o-mini", "ma": "x"}), encoding="utf-8")
+    assert doc_cau_hinh(tot)["k"] == 3
+    thieu = tmp_path / "thieu.json"
+    thieu.write_text(json.dumps({"k": 3}), encoding="utf-8")
+    with pytest.raises(ValueError, match="thieu.json"):
+        doc_cau_hinh(thieu)
+    hong = tmp_path / "hong.json"
+    hong.write_text("{không phải json", encoding="utf-8")
+    with pytest.raises(ValueError, match="hong.json"):
+        doc_cau_hinh(hong)
+
+
+def test_dong_lenh_dung_cau_hinh_dang_dung(tmp_path, monkeypatch, caplog):
+    nhan = {}
+    monkeypatch.setattr(audit, "run_audit", lambda csv_path, out, **kw: nhan.update(kw) or {
+        "tong_ket": {"so_cau": 1, "dung": 1, "sai": 0, "khong_can_cu": 0, "loi": 0, "cong": "DAT"}})
+    ch = tmp_path / "cau_hinh_dang_dung.json"
+    ch.write_text(json.dumps({"k": 3, "retriever": "bm25", "model": "openai/gpt-4o-mini", "ma": "k3-bm25-gpt-4o-mini"}),
+                  encoding="utf-8")
+    with caplog.at_level("INFO", logger="core.audit"):
+        audit.main([str(ghi_csv(tmp_path / "in.csv", [(1, "q", "a")]))], cau_hinh_path=ch)
+    assert nhan == {"k": 3, "retriever": "bm25", "model": "openai/gpt-4o-mini"}
+    assert any("k3-bm25-gpt-4o-mini" in r.getMessage() for r in caplog.records)
+
+
+def test_dong_lenh_cau_hinh_hong_thi_bao_loi(tmp_path):
+    ch = tmp_path / "cau_hinh_dang_dung.json"
+    ch.write_text(json.dumps({"k": 3}), encoding="utf-8")
+    with pytest.raises(ValueError, match="cau_hinh_dang_dung.json"):
+        audit.main([str(ghi_csv(tmp_path / "in.csv", [(1, "q", "a")]))], cau_hinh_path=ch)
+
+
+@pytest.mark.parametrize("noi_dung, sai", [
+    ({"k": 5, "retriever": None, "model": "openai/gpt-4.1-mini"}, "retriever"),
+    ({"k": 5, "retriever": "qdrant", "model": None}, "model"),
+    ({"k": None, "retriever": "qdrant", "model": "openai/gpt-4.1-mini"}, "k"),
+    ({"k": 0, "retriever": "qdrant", "model": "openai/gpt-4.1-mini"}, "k"),
+    ({"k": 5, "retriever": "elastic", "model": "openai/gpt-4.1-mini"}, "retriever"),
+    ({"k": 5, "retriever": "qdrant", "model": "  "}, "model"),
+])
+def test_doc_cau_hinh_gia_tri_khong_hop_le_thi_bao_loi(tmp_path, noi_dung, sai):
+    from core.audit import doc_cau_hinh
+
+    p = tmp_path / "cau_hinh_dang_dung.json"
+    p.write_text(json.dumps(noi_dung), encoding="utf-8")
+    with pytest.raises(ValueError, match=sai):
+        doc_cau_hinh(p)

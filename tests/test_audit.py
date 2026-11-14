@@ -450,3 +450,45 @@ def test_y_bi_ha_nhan_khong_tinh_la_dung_trong_faithfulness(env_rieng):
     kq, _, _ = chay_trich("Theo Điều 50.", cac_y=[y("DUNG", trich_dan="Điều 60"), y("DUNG")])
     assert kq["cac_y"][0]["ha_nhan"] is True
     assert kq["faithfulness"] == 0.5
+
+
+# --- Nhận cấu hình: k, retriever, model (cho agent tối ưu) ----------------------------
+
+def test_k_truyen_xuong_retrieve_cua_audit_one():
+    goi = []
+
+    def retrieve(query, k=5):
+        goi.append(k)
+        return fake_retrieve(query, k)
+
+    audit_one("q", "a", retrieve_fn=retrieve, get_article_fn=lambda d: None, llm_fn=fake_llm([y("DUNG")]), k=3)
+    assert goi == [3]
+
+
+@pytest.mark.parametrize("ten, mong", [("bm25", "bm25"), ("qdrant", "qdrant"), ("", "qdrant")])
+def test_chon_nguon_theo_ten(env_rieng, ten, mong):
+    from core.audit import chon_nguon
+
+    env_rieng.setenv("RETRIEVER", "bm25" if mong == "qdrant" else "")  # tên truyền vào thắng biến môi trường
+    assert mong in chon_nguon(ten).ten
+
+
+def test_chon_nguon_ten_la_bao_loi(env_rieng):
+    from core.audit import chon_nguon
+
+    with pytest.raises(ValueError, match="elastic"):
+        chon_nguon("elastic")
+
+
+def test_tao_llm_dung_model_truyen_vao(monkeypatch):
+    import sys
+
+    from core import audit
+
+    gia = LiteLLMGia(json.dumps({"cac_y": [y("DUNG")]}), chi_phi=0.5)
+    monkeypatch.setitem(sys.modules, "litellm", gia)
+    monkeypatch.setattr(audit, "_nap_env", lambda: None)
+    monkeypatch.setenv("LLM_MODEL", "khac/model-env")
+    van_ban, chi_phi = audit.tao_llm("a/model-truyen")([{"role": "user", "content": "x"}])
+    assert gia.tham_so["model"] == "a/model-truyen" and gia.tham_so["temperature"] == 0
+    assert chi_phi == 0.5 and "DUNG" in van_ban

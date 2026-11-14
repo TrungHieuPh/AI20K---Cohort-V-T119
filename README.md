@@ -155,6 +155,13 @@ python -m core.audit results_answers.csv
 python -m eval.score results.json <path/to/answer_key.csv> [--lan2 results_run2.json] [--out results_score.json]
 #    --lan2: a second run of the same CSV, to measure verdict stability. Dev set key: data/test/dev_set_dap_an.csv
 
+# 4. Optimise the audit configuration (k × retriever × judge model) and approve it (human in the loop)
+python -m eval.optimize thu [--k 3,5,8] [--retriever qdrant,bm25] [--model openai/gpt-4o-mini,...] [--toi-da-usd 2]
+#    Runs every configuration on the dev set, writes results_toi_uu/<run>/bao_cao.md (table, Pareto, proposal).
+python -m eval.optimize duyet <run> <config> --nguoi-duyet "Name"
+#    Regression gate on the held-out demo set (new config vs current, 2 runs each): if it is no worse,
+#    writes cau_hinh_dang_dung.json (python -m core.audit then uses it) and appends to lich_su_cau_hinh.jsonl.
+
 # UI (Next.js, in web/; being built)
 cd web && npm install && npm run dev
 ```

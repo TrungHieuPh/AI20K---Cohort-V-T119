@@ -373,3 +373,58 @@ def test_noi_dung_da_co_dong_dieu_thi_khong_lap_lai_trong_prompt():
 
     audit_one("q", "a", retrieve_fn=lambda q, k=5: [chunk], llm_fn=llm)
     assert da_gui[0][1]["content"].count("Điều 2.") == 1
+
+
+# --- Kiểm bằng chứng có đúng nguyên văn trong Điều được trích ------------------------
+
+DIEU_35_GIA = {"chunk_id": "dieu-35", "dieu": 35, "tieu_de": "[GIẢ] Điều 35",
+               "noi_dung": "Điều 35. [GIẢ] Điều 35\n1. Người lao động giả phải báo trước như sau:\n"
+                           "a) Ít nhất 45 ngày giả nếu làm việc theo hợp đồng giả;\nb) Ít nhất 30 ngày giả nếu khác."}
+DIEU_36_GIA = {"chunk_id": "dieu-36", "dieu": 36, "tieu_de": "[GIẢ] Điều 36",
+               "noi_dung": "Điều 36. [GIẢ] Điều 36\nNgười sử dụng lao động giả có quyền giả."}
+
+
+def chay_bang_chung(bang_chung, trich_dan="Điều 35 khoản 1 điểm a", nhan="DUNG"):
+    y_ = {**y(nhan, trich_dan=trich_dan), "bang_chung": bang_chung}
+    kq = audit_one("q", "a", retrieve_fn=lambda q, k=5: [dict(DIEU_35_GIA), dict(DIEU_36_GIA)],
+                   get_article_fn=lambda d: None, llm_fn=fake_llm([y_]))
+    return kq["cac_y"][0]
+
+
+@pytest.mark.parametrize(
+    "bang_chung",
+    [
+        "a) Ít nhất 45 ngày giả nếu làm việc theo hợp đồng giả;",
+        "ít nhất 45 NGÀY giả   nếu làm việc theo hợp đồng giả",  # khác hoa thường, khoảng trắng, dấu câu
+        "theo hợp đồng giả; b) Ít nhất 30 ngày giả",  # nối qua xuống dòng và ký hiệu điểm
+        "Người lao động giả phải báo trước ... Ít nhất 30 ngày giả nếu khác",  # ngắt đoạn bằng ...
+        "Người lao động giả phải báo trước … Ít nhất 45 ngày giả",  # dấu … một ký tự
+    ],
+)
+def test_bang_chung_dung_nguyen_van_thi_khong_gan_co(bang_chung):
+    assert "bang_chung_khop" not in chay_bang_chung(bang_chung)
+
+
+def test_bang_chung_bia_thi_gan_co_va_giu_nguyen_nhan():
+    y_ = chay_bang_chung("Ít nhất 60 ngày giả nếu làm việc theo hợp đồng giả")
+    assert y_["bang_chung_khop"] is False
+    assert y_["nhan"] == "DUNG"
+
+
+def test_mot_doan_trong_cac_doan_ngat_khong_khop_thi_gan_co():
+    y_ = chay_bang_chung("Người lao động giả phải báo trước ... Ít nhất 90 ngày giả nếu khác")
+    assert y_["bang_chung_khop"] is False
+
+
+def test_bang_chung_lay_tu_dieu_khac_dieu_duoc_trich_thi_gan_co():
+    y_ = chay_bang_chung("Người sử dụng lao động giả có quyền giả", trich_dan="Điều 35 khoản 1")
+    assert y_["bang_chung_khop"] is False
+
+
+def test_bang_chung_trai_luat_cung_duoc_kiem():
+    y_ = chay_bang_chung("Ít nhất 99 ngày giả", trich_dan="Điều 35", nhan="TRAI_LUAT")
+    assert y_["bang_chung_khop"] is False
+
+
+def test_bang_chung_rong_thi_khong_kiem():
+    assert "bang_chung_khop" not in chay_bang_chung("", trich_dan="", nhan="KHONG_CAN_CU")

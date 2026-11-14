@@ -67,7 +67,7 @@ CSV: id, cau_hoi, cau_tra_loi
 | Người | Phần | Nhánh | Trạng thái |
 |---|---|---|---|
 | **Bào** | Dữ liệu luật, ingest, `retrieve()`, `get_article()` | `feat/retrieval` | Xong, chưa merge vào `develop` |
-| **Vĩnh** (tech lead) | `core/audit.py`: `audit_one`, `run_audit` | `feat/audit` | Code + 51 test pass, đã merge `origin/feat/retrieval` vào. Đang nối với retrieve thật và LLM thật |
+| **Vĩnh** | `core/audit.py`: `audit_one`, `run_audit` | `feat/audit` | Đã nối với retrieve thật (bge-m3 + Qdrant) và LLM thật (gpt-4.1-mini), 84 test pass. 4 câu demo ra đúng 4/4, ổn định qua 2 lần chạy. Chưa push |
 | **Khoa** | `eval/score.py`, tập dev và tập test | `feat/eval` | Hỏi Vĩnh |
 | **Hiếu** | `app/app.py` (Streamlit) | `feat/ui` | Hỏi Vĩnh |
 

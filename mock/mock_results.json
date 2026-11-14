@@ -1,0 +1,113 @@
+{
+  "_ghi_chu": "Kết quả THẬT của pipeline (bge-m3 + Qdrant, judge openai/gpt-4.1-mini) trên data/demo/demo_samples.csv: 4 câu mẫu do Vĩnh soạn, không phải test set kín. Dùng làm dữ liệu mẫu cho UI; tạo ngày 14/11/2026.",
+  "tong_ket": {
+    "so_cau": 4,
+    "dung": 1,
+    "sai": 2,
+    "khong_can_cu": 1,
+    "loi": 0,
+    "cong": "KHONG_DAT"
+  },
+  "cau": [
+    {
+      "id": 1,
+      "ket_luan": "DUNG",
+      "faithfulness": null,
+      "cac_y": [
+        {
+          "noi_dung": "Người lao động phải báo trước cho người sử dụng lao động ít nhất 45 ngày khi làm hợp đồng lao động không xác định thời hạn muốn nghỉ việc.",
+          "nhan": "DUNG",
+          "trich_dan": "Điều 35 khoản 1 điểm a",
+          "bang_chung": "a) Ít nhất 45 ngày nếu làm việc theo hợp đồng lao động không xác định thời hạn;",
+          "giai_thich": "Quy định rõ người lao động làm hợp đồng không xác định thời hạn phải báo trước ít nhất 45 ngày khi đơn phương chấm dứt hợp đồng."
+        }
+      ],
+      "dieu_truy_hoi": [
+        "dieu-35",
+        "dieu-45",
+        "dieu-36",
+        "dieu-38",
+        "dieu-31"
+      ],
+      "thoi_gian_ms": 2710,
+      "chi_phi_usd": 0.0004832
+    },
+    {
+      "id": 2,
+      "ket_luan": "SAI",
+      "faithfulness": null,
+      "cac_y": [
+        {
+          "noi_dung": "Người lao động được làm thêm không quá 300 giờ trong 01 năm.",
+          "nhan": "TRAI_LUAT",
+          "trich_dan": "Điều 107 khoản 2 và khoản 3",
+          "bang_chung": "2.b) ... không quá 40 giờ trong 01 tháng; 2.c) ... không quá 200 giờ trong 01 năm, trừ khoản 3; 3. ... làm thêm không quá 300 giờ trong 01 năm trong một số ngành, nghề, công việc hoặc trường hợp sau đây:",
+          "giai_thich": "Khoản 2 quy định tối đa 200 giờ/năm trong điều kiện bình thường, khoản 3 cho phép 300 giờ/năm chỉ trong một số ngành, nghề hoặc trường hợp đặc biệt.",
+          "bang_chung_khop": false
+        }
+      ],
+      "dieu_truy_hoi": [
+        "dieu-107",
+        "dieu-105",
+        "dieu-108",
+        "dieu-98",
+        "dieu-109"
+      ],
+      "thoi_gian_ms": 2351,
+      "chi_phi_usd": 0.000518
+    },
+    {
+      "id": 3,
+      "ket_luan": "KHONG_CAN_CU",
+      "faithfulness": null,
+      "cac_y": [
+        {
+          "noi_dung": "Người lao động làm công việc bình thường được nghỉ 12 ngày làm việc mỗi năm, hưởng nguyên lương.",
+          "nhan": "DUNG",
+          "trich_dan": "Điều 113 khoản 1 điểm a",
+          "bang_chung": "12 ngày làm việc đối với người làm công việc trong điều kiện bình thường;",
+          "giai_thich": "Người lao động làm đủ 12 tháng được nghỉ 12 ngày làm việc nếu làm công việc trong điều kiện bình thường."
+        },
+        {
+          "noi_dung": "Khi nghỉ phép năm, người sử dụng lao động phải hỗ trợ thêm tiền du lịch bằng 01 tháng lương.",
+          "nhan": "KHONG_CAN_CU",
+          "trich_dan": "",
+          "bang_chung": "",
+          "giai_thich": "Văn bản luật không quy định người sử dụng lao động phải hỗ trợ tiền du lịch khi nghỉ phép năm."
+        }
+      ],
+      "dieu_truy_hoi": [
+        "dieu-113",
+        "dieu-114",
+        "dieu-111",
+        "dieu-112",
+        "dieu-109"
+      ],
+      "thoi_gian_ms": 2269,
+      "chi_phi_usd": 0.0005124
+    },
+    {
+      "id": 4,
+      "ket_luan": "SAI",
+      "faithfulness": null,
+      "cac_y": [
+        {
+          "noi_dung": "Lao động nữ được nghỉ thai sản 06 tháng cho mọi lần sinh, không phân biệt con thứ mấy.",
+          "nhan": "TRAI_LUAT",
+          "trich_dan": "Điều 139 khoản 1",
+          "bang_chung": "Lao động nữ được nghỉ thai sản trước và sau khi sinh con là 06 tháng; trường hợp sinh con thứ hai, lao động nữ được nghỉ thai sản trước và sau khi sinh con là 07 tháng;",
+          "giai_thich": "Văn bản luật quy định rõ lao động nữ sinh con thứ hai được nghỉ 07 tháng, không phải 06 tháng cho mọi lần sinh."
+        }
+      ],
+      "dieu_truy_hoi": [
+        "dieu-139",
+        "dieu-137",
+        "dieu-140",
+        "dieu-111",
+        "dieu-113"
+      ],
+      "thoi_gian_ms": 1655,
+      "chi_phi_usd": 0.0004988
+    }
+  ]
+}

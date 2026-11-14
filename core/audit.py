@@ -153,6 +153,32 @@ def _chan_trich_dan_ngoai(cac_y, chunks):
     return cac_y
 
 
+def _chuan_hoa_chu(van_ban):
+    """Chữ thường, NFC, bỏ dấu câu/ký hiệu, gộp khoảng trắng: để so nguyên văn theo từng chữ."""
+    van_ban = unicodedata.normalize("NFC", van_ban).lower()
+    return " ".join(re.sub(r"[^\w]+", " ", van_ban).split())
+
+
+def _bang_chung_khop(bang_chung, trich_dan, can_cu):
+    """Bằng chứng phải nằm nguyên văn trong Điều được trích (hoặc trong mọi Điều judge nhận, nếu
+    trích dẫn không chỉ ra Điều nào có trong đó). Judge được ngắt đoạn bằng "..." / "…";
+    đoạn dưới 3 chữ (vd "2.b)") bỏ qua, trừ khi cả bằng chứng chỉ có vậy."""
+    m = re.search(r"điều\s+(\d+)", unicodedata.normalize("NFC", trich_dan), flags=re.IGNORECASE)
+    dieu_trich = [c for c in can_cu if m and int(c["dieu"]) == int(m.group(1))]
+    van_ban = _chuan_hoa_chu("\n".join(c["noi_dung"] for c in (dieu_trich or can_cu)))
+    doan = [_chuan_hoa_chu(d) for d in re.split(r"\.{3,}|…", bang_chung)]
+    doan_dai = [d for d in doan if len(d.split()) >= 3] or [d for d in doan if d]
+    return all(d in van_ban for d in doan_dai)
+
+
+def _kiem_bang_chung(cac_y, can_cu):
+    """Gắn bang_chung_khop=False cho ý có bằng chứng không đúng nguyên văn; không đổi nhãn."""
+    for y in cac_y:
+        if y["bang_chung"].strip() and not _bang_chung_khop(y["bang_chung"], y["trich_dan"], can_cu):
+            y["bang_chung_khop"] = False
+    return cac_y
+
+
 def _goi_co_thu_lai(llm_fn, messages):
     """Gọi LLM, chỉ thử lại khi gặp lỗi 429 (quá giới hạn tốc độ), chờ tăng dần."""
     for lan in range(SO_LAN_THU):
@@ -232,7 +258,7 @@ def audit_one(cau_hoi, cau_tra_loi, *, retrieve_fn=None, get_article_fn=None, ll
     chunks = retrieve_fn(f"{cau_hoi}\n{cau_tra_loi}", k=SO_DIEU_TRUY_HOI)
     can_cu = chunks + _lay_dieu_trich_them(cau_tra_loi, chunks, get_article_fn)
     van_ban, chi_phi = _goi_co_thu_lai(llm_fn, _tao_messages(cau_hoi, cau_tra_loi, can_cu))
-    cac_y = _chan_trich_dan_ngoai(_kiem_cac_y(_doc_json(van_ban)), can_cu)
+    cac_y = _kiem_bang_chung(_chan_trich_dan_ngoai(_kiem_cac_y(_doc_json(van_ban)), can_cu), can_cu)
     return {
         "ket_luan": _ket_luan([y["nhan"] for y in cac_y]),
         "faithfulness": None,

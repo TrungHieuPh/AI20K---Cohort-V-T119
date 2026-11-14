@@ -215,7 +215,8 @@ The index runs in Qdrant local mode (`.qdrant/`, git-ignored), and only one proc
 
 Allowed values:
 - `cac_y[].nhan`: `DUNG`, `TRAI_LUAT`, `KHONG_CAN_CU`.
-- `cac_y[].ha_nhan`: present and `true` only when the system downgraded a `DUNG` claim to `KHONG_CAN_CU` because its citation is not among the retrieved articles. Absent otherwise.
+- `cac_y[].ha_nhan`: present and `true` only when the system downgraded a `DUNG` claim to `KHONG_CAN_CU` because its citation is not among the articles given to the judge (the top-5 retrieved, plus up to 3 articles the answer itself cites, fetched with `get_article`). Absent otherwise.
+- `cac_y[].bang_chung_khop`: present and `false` only when `bang_chung` is not a verbatim quote of the cited article (compared word by word, ignoring case and punctuation; the judge may elide with `...`). A warning only: the label is not changed. Absent otherwise.
 - `cau[].ket_luan`: `DUNG`, `SAI`, `KHONG_CAN_CU`, or `LOI` when the answer could not be audited (it is retried once first).
 - `cau[].loi`: present only when `ket_luan` is `LOI`; the error message.
 - `tong_ket.loi`: number of answers with `LOI`. Always `so_cau = dung + sai + khong_can_cu + loi`.
@@ -255,7 +256,7 @@ MVP targets:
 
 | Member | Role |
 |---|---|
-| Ngô Chí Vĩnh | Tech lead, claim verification (`core/audit.py`) |
+| Ngô Chí Vĩnh | Claim verification (`core/audit.py`) |
 | Nguyễn Khắc Bào | Law data and retrieval (`core/ingest.py`, `core/retrieve.py`), project management |
 | Lê Viết Khoa | Test sets, scoring (`eval/score.py`), demo |
 | Phan Trung Hiếu | Streamlit UI and deployment (`app/`) |

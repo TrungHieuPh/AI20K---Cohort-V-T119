@@ -393,6 +393,8 @@ def run_audit(csv_path, out_path="results.json", *, audit_fn=None, nguon=None, l
         if thieu:
             raise ValueError(f"CSV thiếu cột: {', '.join(thieu)}")
         dong = list(doc)
+    if not dong:
+        raise ValueError(f"CSV không có câu nào để kiểm: {csv_path}")  # tránh cổng DAT rỗng
     if audit_fn is None:
         audit_fn = _chuan_bi_audit(nguon, llm_fn)
 

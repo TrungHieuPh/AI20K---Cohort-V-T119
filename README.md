@@ -146,6 +146,11 @@ python -m scripts.check_retrieval data/test/retrieval_smoke.csv
 # 2. Audit a CSV of answers (writes results.json)
 python -m core.audit data/test/dev_set.csv
 
+#    Our own RAG Q&A bot: answer a CSV of questions (id, cau_hoi), then audit its answers
+python -m core.answer data/test/retrieval_smoke.csv     # writes results_answers.csv + results_answers.json
+#    Questions that fail twice are left out of the CSV (see "loi" in the .json) and the command exits with code 1.
+python -m core.audit results_answers.csv
+
 # 3. Score results against an answer key kept outside the repo
 python -m eval.score results.json <path/to/answer_key.csv> [--lan2 results_run2.json] [--out results_score.json]
 #    --lan2: a second run of the same CSV, to measure verdict stability. Dev set key: data/test/dev_set_dap_an.csv

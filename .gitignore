@@ -12,6 +12,7 @@ data/test/test_set*.csv
 # (.qdrant*/ also covers a custom QDRANT_PATH such as .qdrant_test/)
 .qdrant*/
 results*.json
+results*.csv
 *.log
 
 # Embedding model cache, if HF_HOME is pointed inside the repo

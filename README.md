@@ -199,6 +199,8 @@ The index runs in Qdrant local mode (`.qdrant/`, git-ignored), and only one proc
   "cau": [
     {
       "id": 1,
+      "cau_hoi": "Người lao động có hợp đồng không xác định thời hạn phải báo trước bao nhiêu ngày khi nghỉ việc?",
+      "cau_tra_loi": "Chỉ cần báo trước 30 ngày.",
       "ket_luan": "SAI",
       "faithfulness": 0.0,
       "cac_y": [
@@ -222,6 +224,7 @@ Allowed values:
 - `cac_y[].nhan`: `DUNG`, `TRAI_LUAT`, `KHONG_CAN_CU`.
 - `cac_y[].ha_nhan`: present and `true` only when the system downgraded a `DUNG` claim to `KHONG_CAN_CU` because its citation is not among the articles given to the judge (the top-5 retrieved, plus up to 3 articles the answer itself cites, fetched with `get_article`). Absent otherwise.
 - `cac_y[].bang_chung_khop`: present and `false` only when `bang_chung` is not a verbatim quote of the cited article (compared word by word, ignoring case and punctuation; the judge may elide with `...`). A warning only: the label is not changed. Absent otherwise.
+- `cau[].cau_hoi`, `cau[].cau_tra_loi`: copied from the input CSV (also on `LOI` rows), so a UI can show them without the CSV.
 - `cau[].ket_luan`: `DUNG`, `SAI`, `KHONG_CAN_CU`, or `LOI` when the answer could not be audited (it is retried once first).
 - `cau[].loi`: present only when `ket_luan` is `LOI`; the error message.
 - `cau[].faithfulness`: share of the answer's claims labelled `DUNG` (supported claims / all claims), rounded to 2 decimals; `null` when `ket_luan` is `LOI`. This follows the Ragas definition of faithfulness but is computed from the audit's own labels (after the citation check), not by calling the Ragas library.

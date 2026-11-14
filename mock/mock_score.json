@@ -1,0 +1,165 @@
+{
+  "so_cau": 10,
+  "bat_duoc": {
+    "dat": 5,
+    "tong": 5,
+    "ti_le": 1.0,
+    "muc_tieu": 0.8,
+    "dat_muc_tieu": true
+  },
+  "bao_nham": {
+    "dat": 0,
+    "tong": 5,
+    "ti_le": 0.0,
+    "muc_tieu": 0.06666666666666667,
+    "dat_muc_tieu": true
+  },
+  "loi": {
+    "cau_sai": 0,
+    "cau_dung": 0
+  },
+  "trich_dung_dieu": {
+    "dat": 4,
+    "tong": 4,
+    "ti_le": 1.0,
+    "muc_tieu": 1.0,
+    "dat_muc_tieu": true
+  },
+  "truy_hoi_dung": {
+    "dat": 9,
+    "tong": 9,
+    "ti_le": 1.0,
+    "muc_tieu": 0.9,
+    "dat_muc_tieu": true
+  },
+  "on_dinh": {
+    "dat": 10,
+    "tong": 10,
+    "ti_le": 1.0,
+    "muc_tieu": 0.95,
+    "dat_muc_tieu": true,
+    "khac_nhau": []
+  },
+  "thoi_gian": {
+    "tong_s": 27.3,
+    "quy_ve_20_cau_s": 54.5,
+    "muc_tieu_s": 300,
+    "dat_muc_tieu": true
+  },
+  "chi_phi_usd": 0.010806,
+  "faithfulness_tb": 0.67,
+  "theo_loai_loi": {
+    "sai_con_so": {
+      "dat": 1,
+      "tong": 1
+    },
+    "luat_cu": {
+      "dat": 1,
+      "tong": 1
+    },
+    "bia_quyen_loi": {
+      "dat": 1,
+      "tong": 1
+    },
+    "trich_sai_dieu": {
+      "dat": 1,
+      "tong": 1
+    },
+    "dung_mot_nua": {
+      "dat": 1,
+      "tong": 1
+    }
+  },
+  "chi_tiet": [
+    {
+      "id": 1,
+      "nhan_that": "DUNG",
+      "loai_loi": "",
+      "ket_luan": "DUNG",
+      "ket_qua": "dung",
+      "trich_dung_dieu": null,
+      "truy_hoi_dung": true
+    },
+    {
+      "id": 2,
+      "nhan_that": "DUNG",
+      "loai_loi": "",
+      "ket_luan": "DUNG",
+      "ket_qua": "dung",
+      "trich_dung_dieu": null,
+      "truy_hoi_dung": true
+    },
+    {
+      "id": 3,
+      "nhan_that": "DUNG",
+      "loai_loi": "",
+      "ket_luan": "DUNG",
+      "ket_qua": "dung",
+      "trich_dung_dieu": null,
+      "truy_hoi_dung": true
+    },
+    {
+      "id": 4,
+      "nhan_that": "DUNG",
+      "loai_loi": "",
+      "ket_luan": "DUNG",
+      "ket_qua": "dung",
+      "trich_dung_dieu": null,
+      "truy_hoi_dung": true
+    },
+    {
+      "id": 5,
+      "nhan_that": "DUNG",
+      "loai_loi": "",
+      "ket_luan": "DUNG",
+      "ket_qua": "dung",
+      "trich_dung_dieu": null,
+      "truy_hoi_dung": true
+    },
+    {
+      "id": 6,
+      "nhan_that": "SAI",
+      "loai_loi": "sai_con_so",
+      "ket_luan": "SAI",
+      "ket_qua": "bat_duoc",
+      "trich_dung_dieu": true,
+      "truy_hoi_dung": true
+    },
+    {
+      "id": 7,
+      "nhan_that": "SAI",
+      "loai_loi": "luat_cu",
+      "ket_luan": "SAI",
+      "ket_qua": "bat_duoc",
+      "trich_dung_dieu": true,
+      "truy_hoi_dung": true
+    },
+    {
+      "id": 8,
+      "nhan_that": "KHONG_CAN_CU",
+      "loai_loi": "bia_quyen_loi",
+      "ket_luan": "KHONG_CAN_CU",
+      "ket_qua": "bat_duoc",
+      "trich_dung_dieu": null,
+      "truy_hoi_dung": null
+    },
+    {
+      "id": 9,
+      "nhan_that": "SAI",
+      "loai_loi": "trich_sai_dieu",
+      "ket_luan": "SAI",
+      "ket_qua": "bat_duoc",
+      "trich_dung_dieu": true,
+      "truy_hoi_dung": true
+    },
+    {
+      "id": 10,
+      "nhan_that": "SAI",
+      "loai_loi": "dung_mot_nua",
+      "ket_luan": "SAI",
+      "ket_qua": "bat_duoc",
+      "trich_dung_dieu": true,
+      "truy_hoi_dung": true
+    }
+  ]
+}

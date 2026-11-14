@@ -315,3 +315,15 @@ def test_faithfulness_tb_tinh_tu_gia_tri_chua_lam_tron(tmp_path):
     kq = run_audit(csv_path, tmp_path / "r.json", audit_fn=audit_fn)
     assert [c["faithfulness"] for c in kq["cau"]] == [0.33, 0.33, 1.0]
     assert kq["tong_ket"]["faithfulness_tb"] == 0.56
+
+
+# --- results.json mang theo câu hỏi và câu trả lời (cho UI) -----------------------------
+
+def test_moi_cau_co_cau_hoi_va_cau_tra_loi_ngay_sau_id(tmp_path):
+    csv_path = ghi_csv(tmp_path / "in.csv", [(1, "Hỏi, có dấu phẩy?", "DUNG"), (2, "Hỏi hai", "LOI")])
+    kq = run_audit(csv_path, tmp_path / "r.json", audit_fn=audit_gia)
+    assert [(c["id"], c["cau_hoi"], c["cau_tra_loi"]) for c in kq["cau"]] == [
+        (1, "Hỏi, có dấu phẩy?", "DUNG"), (2, "Hỏi hai", "LOI")]  # cả câu LOI cũng có
+    assert list(kq["cau"][0])[:3] == ["id", "cau_hoi", "cau_tra_loi"]
+    tren_dia = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+    assert tren_dia["cau"][1]["cau_hoi"] == "Hỏi hai"

@@ -39,8 +39,10 @@ làm theo README. File này chỉ thêm ngữ cảnh và quy tắc làm việc c
     `KHONG_CAN_CU` tính là báo nhầm.
 - **Số lần gọi LLM:** gộp "tách ý + chấm từng ý" vào một lần gọi cho mỗi câu trả lời, `temperature=0`,
   yêu cầu trả JSON và đọc JSON chắc chắn; có thử lại khi gặp lỗi 429; lỗi một câu thì ghi lỗi và chạy tiếp.
-- **Phương án dự phòng:** nếu embedding/Qdrant trục trặc, `retrieve` có thể dùng BM25 (`rank_bm25`)
-  với cùng chữ ký hàm. Ragas faithfulness là phần cộng thêm, không chặn MVP.
+- **Không tự chuyển nguồn truy hồi:** mặc định dùng `core.retrieve` (Qdrant + bge-m3), lỗi thì báo ngay.
+  BM25 (`core/retrieve_bm25.py`, cùng chữ ký hàm) chỉ chạy khi `.env` có `RETRIEVER=bm25`.
+- **Faithfulness:** `audit` tính faithfulness từ nhãn của chính nó (ý `DUNG` / tổng ý), không gọi thư viện Ragas.
+  Ragas thật là bước đánh giá riêng (`eval/ragas_eval.py`, venv riêng), không chặn MVP.
 - Đọc/ghi file `encoding="utf-8"`; CSV xuất cho Excel dùng `utf-8-sig`. Thông báo hiển thị bằng tiếng Việt.
 
 ## Hướng phát triển (để thiết kế không bị bó hẹp)

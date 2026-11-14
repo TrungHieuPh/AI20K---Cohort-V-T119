@@ -1,12 +1,17 @@
 """Kiểm từng ý trong câu trả lời của chatbot so với Bộ luật Lao động.
 
 audit_one(cau_hoi, cau_tra_loi) -> dict  : kiểm một câu (một lần gọi LLM: tách ý + chấm từng ý)
+run_audit(csv_path) -> results.json      : kiểm cả CSV, tổng kết và quyết định cổng 3 mức
+
+Chạy: python -m core.audit data/test/dev_set.csv [--out results.json]
 """
 
+import csv
 import json
 import logging
 import os
 import re
+import sys
 import time
 
 log = logging.getLogger(__name__)
@@ -191,3 +196,106 @@ def audit_one(cau_hoi, cau_tra_loi, *, retrieve_fn=None, llm_fn=None):
         "thoi_gian_ms": round((time.perf_counter() - bat_dau) * 1000),
         "chi_phi_usd": chi_phi,
     }
+
+
+COT_CSV = ("id", "cau_hoi", "cau_tra_loi")
+
+
+def _doc_id(gia_tri):
+    gia_tri = gia_tri.strip()
+    return int(gia_tri) if gia_tri.isdigit() else gia_tri
+
+
+def _cong(cac_ket_luan):
+    if "SAI" in cac_ket_luan:
+        return "KHONG_DAT"
+    if "KHONG_CAN_CU" in cac_ket_luan or "LOI" in cac_ket_luan:
+        return "CAN_XEM_LAI"  # câu lỗi chưa được kiểm, cần người xem
+    return "DAT"
+
+
+KET_LUAN_HOP_LE = ("DUNG", "SAI", "KHONG_CAN_CU")
+SO_LAN_CHAY_MOT_CAU = 2  # lỗi thì chạy lại câu đó 1 lần
+
+
+def _audit_mot_cau(audit_fn, id_, cau_hoi, cau_tra_loi):
+    """Gọi audit cho một câu; lỗi (kể cả ket_luan lạ) thì chạy lại, vẫn lỗi thì trả kết quả LOI."""
+    bat_dau = time.perf_counter()
+    for lan in range(1, SO_LAN_CHAY_MOT_CAU + 1):
+        try:
+            kq = audit_fn(cau_hoi, cau_tra_loi)
+            if kq.get("ket_luan") not in KET_LUAN_HOP_LE:
+                raise ValueError(f"ket_luan không hợp lệ: {kq.get('ket_luan')!r}")
+            return kq
+        except Exception as e:
+            loi = e
+            log.error("Câu %s lỗi (lần %d/%d): %s", id_, lan, SO_LAN_CHAY_MOT_CAU, e)
+    return {
+        "ket_luan": "LOI",
+        "loi": f"{type(loi).__name__}: {loi}",
+        "faithfulness": None,
+        "cac_y": [],
+        "dieu_truy_hoi": [],
+        "thoi_gian_ms": round((time.perf_counter() - bat_dau) * 1000),
+        "chi_phi_usd": None,
+    }
+
+
+def run_audit(csv_path, out_path="results.json", *, audit_fn=None):
+    """Kiểm mọi câu trong CSV (id, cau_hoi, cau_tra_loi), ghi results.json, trả về dict kết quả.
+
+    Lỗi ở một câu: chạy lại câu đó 1 lần; vẫn lỗi thì ghi ket_luan "LOI" và thông báo vào "loi",
+    rồi chạy tiếp câu sau.
+    """
+    audit_fn = audit_fn or audit_one
+    with open(csv_path, encoding="utf-8-sig", newline="") as f:
+        doc = csv.DictReader(f)
+        thieu = [c for c in COT_CSV if c not in (doc.fieldnames or [])]
+        if thieu:
+            raise ValueError(f"CSV thiếu cột: {', '.join(thieu)}")
+        dong = list(doc)
+
+    cau = []
+    for i, d in enumerate(dong, 1):
+        id_ = _doc_id(d["id"])
+        kq = _audit_mot_cau(audit_fn, id_, d["cau_hoi"], d["cau_tra_loi"])
+        cau.append({"id": id_, **kq})
+        log.info("[%d/%d] câu %s: %s", i, len(dong), id_, kq["ket_luan"])
+
+    cac_ket_luan = [c["ket_luan"] for c in cau]
+    tong_ket = {
+        "so_cau": len(cau),
+        "dung": cac_ket_luan.count("DUNG"),
+        "sai": cac_ket_luan.count("SAI"),
+        "khong_can_cu": cac_ket_luan.count("KHONG_CAN_CU"),
+        "loi": cac_ket_luan.count("LOI"),
+        "cong": _cong(cac_ket_luan),
+    }
+    if tong_ket["dung"] + tong_ket["sai"] + tong_ket["khong_can_cu"] + tong_ket["loi"] != tong_ket["so_cau"]:
+        raise AssertionError(f"Tổng các loại không khớp so_cau: {tong_ket}")
+    ket_qua = {"tong_ket": tong_ket, "cau": cau}
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(ket_qua, f, ensure_ascii=False, indent=2)
+    return ket_qua
+
+
+def main(argv=None):
+    import argparse
+
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")  # console Windows mặc định cp1252
+        sys.stderr.reconfigure(encoding="utf-8")
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    p = argparse.ArgumentParser(description="Kiểm câu trả lời của chatbot so với Bộ luật Lao động")
+    p.add_argument("csv_path", help="CSV có cột id, cau_hoi, cau_tra_loi")
+    p.add_argument("--out", default="results.json", help="file kết quả (mặc định results.json)")
+    a = p.parse_args(argv)
+    tk = run_audit(a.csv_path, a.out)["tong_ket"]
+    print(
+        f"Đã kiểm {tk['so_cau']} câu: {tk['dung']} đúng, {tk['sai']} sai, "
+        f"{tk['khong_can_cu']} không căn cứ, {tk['loi']} lỗi. Cổng: {tk['cong']}. Kết quả: {a.out}"
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -13,7 +13,7 @@ lexgate checks each claim in an answer against the law text itself. It blocks th
 ## What the MVP does
 
 **Input**
-- The Vietnamese Labor Code 2019 (Law No. 45/2019/QH14, 220 articles), in its consolidated text 18/VBHN-VPQH of 12/02/2026. That text includes the 2025 amendments to Articles 59, 61, 139 and 154. Data cut-off: 14/11/2026.
+- The Vietnamese Labor Code 2019 (Law No. 45/2019/QH14, 220 articles), in its consolidated text 18/VBHN-VPQH of 12/02/2026. That text includes the 2025 amendments to Articles 59, 61, 139 and 154. Data cut-off: 14/11/2026. The amending laws are No. 71/2025/QH15, 113/2025/QH15 and 124/2025/QH15.
 - A CSV of questions with the chatbot's answers.
 
 **For each answer**
@@ -34,14 +34,17 @@ Each answer then gets a verdict:
 - otherwise `KHONG_CAN_CU` if any claim is `KHONG_CAN_CU`;
 - otherwise `DUNG`.
 
-The chatbot passes (`DAT`) only when no answer is `SAI`.
+The batch then gets a gate decision (`cong`) with three levels:
+- `KHONG_DAT` (fail) if any answer is `SAI`;
+- otherwise `CAN_XEM_LAI` (needs human review) if any answer is `KHONG_CAN_CU`;
+- otherwise `DAT` (pass), meaning every answer is `DUNG`.
 
 **Error types it is built to catch.** The demo set plants 5 wrong answers among 20 questions, one of each type:
 
 | Error type | Example |
 |---|---|
 | Wrong number | Wrong notice period or overtime limit |
-| Outdated law | Quoting the 2012 Labor Code where the 2019 Code changed the rule |
+| Outdated law | Quoting an older rule (the 2012 Labor Code, or 2019 text since amended) where the current consolidated text differs |
 | Invented right | A benefit that no article grants |
 | Wrong article cited | The rule is right, but the article number is not |
 | Partly correct | One true claim mixed with one false claim |
@@ -54,11 +57,11 @@ Law text (18/VBHN-VPQH, .doc → .txt)
        └─ ingest: chapter/section header + article → bge-m3 embeddings (1024-d, cosine) → Qdrant (local)
 
 Q&A CSV
-  └─ audit: answer → claims → top-5 articles → LLM judge per claim (+ Ragas faithfulness)
-       └─ results.json → Streamlit UI
+  └─ audit: answer → claims → top-5 articles (+ articles the answer cites) → LLM judge per claim → faithfulness from the claim labels
+       └─ results.json → Next.js UI (web/)
 ```
 
-**Stack:** Python, Qdrant (local mode), LiteLLM, Ragas, Streamlit.
+**Stack:** Python, Qdrant (local mode), LiteLLM, Ragas, Next.js.
 
 ## Repository layout
 
@@ -73,8 +76,7 @@ zero-one-lexgate/
                          run_audit(csv_path) -> results.json
   eval/
     score.py             score(results_path, answer_key_path)          Khoa
-  app/
-    app.py               Streamlit UI, the MVP frontend                Hiếu
+  web/                   Next.js UI, the MVP frontend (reads results.json) Hiếu
   mock/
     mock_results.json    sample output, so the UI can be built before the backend is ready
   scripts/
@@ -84,12 +86,12 @@ zero-one-lexgate/
     law-data-and-retrieval.md   law data, vector index and retrieve() API: decisions, results, open items
   data/law/              18_VBHN-VPQH.doc (source), bo-luat-lao-dong-vbhn18.txt, dieu.jsonl,
                          dieu.BAAI__bge-m3.npz (cached article vectors)
-  data/test/             dev_set.csv, retrieval_smoke.csv
+  data/test/             dev_set.csv, dev_set_dap_an.csv, retrieval_smoke.csv
   .env.example           settings template; copy to .env
   requirements.txt
 ```
 
-The backend and frontend live in this one repo. In week 2, `api/` (FastAPI wrapping `core/`) and `web/` (Next.js) are added alongside these folders, and nothing above has to move.
+The backend and frontend live in this one repo. In week 2, `api/` (FastAPI wrapping `core/`) is added alongside these folders for login, upload and running audits from the UI, and nothing above has to move. Until then the UI only reads `results.json`; it never loads the embedding model.
 
 ## Getting started
 
@@ -144,11 +146,17 @@ python -m scripts.check_retrieval data/test/retrieval_smoke.csv
 # 2. Audit a CSV of answers (writes results.json)
 python -m core.audit data/test/dev_set.csv
 
-# 3. Score results against an answer key kept outside the repo
-python -m eval.score results.json <path/to/answer_key.csv>
+#    Our own RAG Q&A bot: answer a CSV of questions (id, cau_hoi), then audit its answers
+python -m core.answer data/test/retrieval_smoke.csv     # writes results_answers.csv + results_answers.json
+#    Questions that fail twice are left out of the CSV (see "loi" in the .json) and the command exits with code 1.
+python -m core.audit results_answers.csv
 
-# UI
-streamlit run app/app.py
+# 3. Score results against an answer key kept outside the repo
+python -m eval.score results.json <path/to/answer_key.csv> [--lan2 results_run2.json] [--out results_score.json]
+#    --lan2: a second run of the same CSV, to measure verdict stability. Dev set key: data/test/dev_set_dap_an.csv
+
+# UI (Next.js, in web/; being built)
+cd web && npm install && npm run dev
 ```
 
 ## Data formats
@@ -187,7 +195,7 @@ The index runs in Qdrant local mode (`.qdrant/`, git-ignored), and only one proc
 
 ```json
 {
-  "tong_ket": {"so_cau": 20, "dung": 15, "sai": 5, "khong_can_cu": 0, "cong": "KHONG_DAT"},
+  "tong_ket": {"so_cau": 20, "dung": 15, "sai": 5, "khong_can_cu": 0, "loi": 0, "faithfulness_tb": 0.75, "cong": "KHONG_DAT"},
   "cau": [
     {
       "id": 1,
@@ -210,6 +218,17 @@ The index runs in Qdrant local mode (`.qdrant/`, git-ignored), and only one proc
 }
 ```
 
+Allowed values:
+- `cac_y[].nhan`: `DUNG`, `TRAI_LUAT`, `KHONG_CAN_CU`.
+- `cac_y[].ha_nhan`: present and `true` only when the system downgraded a `DUNG` claim to `KHONG_CAN_CU` because its citation is not among the articles given to the judge (the top-5 retrieved, plus up to 3 articles the answer itself cites, fetched with `get_article`). Absent otherwise.
+- `cac_y[].bang_chung_khop`: present and `false` only when `bang_chung` is not a verbatim quote of the cited article (compared word by word, ignoring case and punctuation; the judge may elide with `...`). A warning only: the label is not changed. Absent otherwise.
+- `cau[].ket_luan`: `DUNG`, `SAI`, `KHONG_CAN_CU`, or `LOI` when the answer could not be audited (it is retried once first).
+- `cau[].loi`: present only when `ket_luan` is `LOI`; the error message.
+- `cau[].faithfulness`: share of the answer's claims labelled `DUNG` (supported claims / all claims), rounded to 2 decimals; `null` when `ket_luan` is `LOI`. This follows the Ragas definition of faithfulness but is computed from the audit's own labels (after the citation check), not by calling the Ragas library.
+- `tong_ket.loi`: number of answers with `LOI`. Always `so_cau = dung + sai + khong_can_cu + loi`.
+- `tong_ket.faithfulness_tb`: mean `faithfulness` over the answers that have one (answers with `LOI` are skipped), rounded to 2 decimals; `null` if none has a value. It reads as "share of claims that have a basis in the law text", not as a legal-correctness score: `TRAI_LUAT` and `KHONG_CAN_CU` claims both count as unsupported.
+- `tong_ket.cong`: `KHONG_DAT` (some answer is `SAI`), `CAN_XEM_LAI` (no `SAI`, but some answer is `KHONG_CAN_CU` or `LOI`), `DAT` (every answer is `DUNG`).
+
 ## Evaluation
 
 The team tunes on one set and reports on another, so the reported numbers are not fitted to the test questions.
@@ -217,6 +236,11 @@ The team tunes on one set and reports on another, so the reported numbers are no
 - **Dev set:** 10 questions, open to the whole team for tuning.
 - **Test set:** 20 questions, 5 of them deliberately wrong. Only the evaluation owner holds the test set and its answer key. Both are git-ignored (`data/test/test_set*.csv`, `answer_key*.csv`), so they never reach the repo.
 - **Blind runs:** code is frozen first, then the test set is run twice to measure how stable the verdicts are.
+
+**Scoring rule.** A verdict of `SAI` or `KHONG_CAN_CU` both count as flagging an answer:
+- A deliberately wrong answer is **caught** if its verdict is `SAI` or `KHONG_CAN_CU`, and **missed** if it is `DUNG` or `LOI`.
+- A correct answer is a **false alarm** if its verdict is `SAI` or `KHONG_CAN_CU`. A correct answer with `LOI` is not a false alarm.
+- The number of `LOI` answers is reported separately.
 
 MVP targets:
 
@@ -233,16 +257,16 @@ MVP targets:
 
 - An agent that diagnoses retrieval misses and tunes the pipeline (chunking, `k`, embedding model), scored with Ragas. This is the core of AIP-04.
 - Comparison of embedding models, starting with bge-m3.
-- Login, a FastAPI backend in `api/` and a Next.js frontend in `web/`.
+- Login and a FastAPI backend in `api/` behind the Next.js frontend in `web/`.
 
 ## Team
 
 | Member | Role |
 |---|---|
-| Ngô Chí Vĩnh | Tech lead, claim verification (`core/audit.py`) |
+| Ngô Chí Vĩnh | Claim verification (`core/audit.py`) |
 | Nguyễn Khắc Bào | Law data and retrieval (`core/ingest.py`, `core/retrieve.py`), project management |
 | Lê Viết Khoa | Test sets, scoring (`eval/score.py`), demo |
-| Phan Trung Hiếu | Streamlit UI and deployment (`app/`) |
+| Phan Trung Hiếu | Next.js UI and deployment (`web/`) |
 
 ## Disclaimer
 

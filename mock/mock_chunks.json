@@ -1,0 +1,21 @@
+{
+  "_ghi_chu": "DỮ LIỆU GIẢ chỉ dùng cho test. Nội dung không phải văn bản luật thật.",
+  "chunks": [
+    {
+      "chunk_id": "dieu-35",
+      "chuong": "III",
+      "dieu": 35,
+      "tieu_de": "[GIẢ] Tiêu đề giả của Điều 35",
+      "noi_dung": "[GIẢ] Nội dung giả của Điều 35, chỉ để test.",
+      "score": 0.91
+    },
+    {
+      "chunk_id": "dieu-36",
+      "chuong": "III",
+      "dieu": 36,
+      "tieu_de": "[GIẢ] Tiêu đề giả của Điều 36",
+      "noi_dung": "[GIẢ] Nội dung giả của Điều 36, chỉ để test.",
+      "score": 0.74
+    }
+  ]
+}

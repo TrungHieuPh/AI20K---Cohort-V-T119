@@ -5,3 +5,8 @@ torch==2.15.0
 transformers==5.23.0
 numpy==2.5.4
 python-dotenv==1.2.4
+
+# Claim verification (core/audit.py) and tests
+litellm
+rank_bm25
+pytest

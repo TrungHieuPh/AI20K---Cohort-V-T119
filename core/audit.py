@@ -402,7 +402,7 @@ def run_audit(csv_path, out_path="results.json", *, audit_fn=None, nguon=None, l
     for i, d in enumerate(dong, 1):
         id_ = _doc_id(d["id"])
         kq = _audit_mot_cau(audit_fn, id_, d["cau_hoi"], d["cau_tra_loi"])
-        cau.append({"id": id_, **kq})
+        cau.append({"id": id_, "cau_hoi": d["cau_hoi"], "cau_tra_loi": d["cau_tra_loi"], **kq})  # UI hiển thị thẳng
         log.info("[%d/%d] câu %s: %s", i, len(dong), id_, kq["ket_luan"])
 
     cac_ket_luan = [c["ket_luan"] for c in cau]

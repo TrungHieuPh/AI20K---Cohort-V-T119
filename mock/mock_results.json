@@ -12,6 +12,8 @@
   "cau": [
     {
       "id": 1,
+      "cau_hoi": "Người lao động làm hợp đồng không xác định thời hạn muốn nghỉ việc thì phải báo trước bao lâu?",
+      "cau_tra_loi": "Người lao động phải báo trước cho người sử dụng lao động ít nhất 45 ngày, theo điểm a khoản 1 Điều 35 Bộ luật Lao động.",
       "ket_luan": "DUNG",
       "faithfulness": 1.0,
       "cac_y": [
@@ -35,6 +37,8 @@
     },
     {
       "id": 2,
+      "cau_hoi": "Trong điều kiện bình thường, người lao động được làm thêm tối đa bao nhiêu giờ trong một năm?",
+      "cau_tra_loi": "Người lao động được làm thêm không quá 300 giờ trong 01 năm, theo Điều 107 Bộ luật Lao động.",
       "ket_luan": "SAI",
       "faithfulness": 0.0,
       "cac_y": [
@@ -59,6 +63,8 @@
     },
     {
       "id": 3,
+      "cau_hoi": "Người lao động làm đủ 12 tháng thì được nghỉ phép năm như thế nào?",
+      "cau_tra_loi": "Người lao động làm công việc bình thường được nghỉ 12 ngày làm việc mỗi năm, hưởng nguyên lương. Ngoài ra, khi nghỉ phép năm, người sử dụng lao động phải hỗ trợ thêm tiền du lịch bằng 01 tháng lương.",
       "ket_luan": "KHONG_CAN_CU",
       "faithfulness": 0.5,
       "cac_y": [
@@ -89,6 +95,8 @@
     },
     {
       "id": 4,
+      "cau_hoi": "Lao động nữ sinh con thứ hai được nghỉ thai sản bao lâu?",
+      "cau_tra_loi": "Lao động nữ được nghỉ thai sản 06 tháng cho mọi lần sinh, không phân biệt con thứ mấy.",
       "ket_luan": "SAI",
       "faithfulness": 0.0,
       "cac_y": [

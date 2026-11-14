@@ -13,7 +13,7 @@ lexgate checks each claim in an answer against the law text itself. It blocks th
 ## What the MVP does
 
 **Input**
-- The Vietnamese Labor Code 2019 (Law No. 45/2019/QH14, 220 articles).
+- The Vietnamese Labor Code, consolidated text No. 18/VBHN-VPQH dated 12/02/2026: Law No. 45/2019/QH14 as amended by Laws No. 71/2025/QH15, 113/2025/QH15 and 124/2025/QH15. Source: vbpl.vn.
 - A CSV of questions with the chatbot's answers.
 
 **For each answer**
@@ -34,14 +34,17 @@ Each answer then gets a verdict:
 - otherwise `KHONG_CAN_CU` if any claim is `KHONG_CAN_CU`;
 - otherwise `DUNG`.
 
-The chatbot passes (`DAT`) only when no answer is `SAI`.
+The batch then gets a gate decision (`cong`) with three levels:
+- `KHONG_DAT` (fail) if any answer is `SAI`;
+- otherwise `CAN_XEM_LAI` (needs human review) if any answer is `KHONG_CAN_CU`;
+- otherwise `DAT` (pass), meaning every answer is `DUNG`.
 
 **Error types it is built to catch.** The demo set plants 5 wrong answers among 20 questions, one of each type:
 
 | Error type | Example |
 |---|---|
 | Wrong number | Wrong notice period or overtime limit |
-| Outdated law | Quoting the 2012 Labor Code where the 2019 Code changed the rule |
+| Outdated law | Quoting an older rule (the 2012 Labor Code, or 2019 text since amended) where the current consolidated text differs |
 | Invented right | A benefit that no article grants |
 | Wrong article cited | The rule is right, but the article number is not |
 | Partly correct | One true claim mixed with one false claim |
@@ -49,7 +52,7 @@ The chatbot passes (`DAT`) only when no answer is `SAI`.
 ## How it works
 
 ```
-Law text (Word/HTML from vbpl.vn)
+Law text (consolidated 18/VBHN-VPQH, Word/HTML from vbpl.vn)
   └─ ingest: split at each "Điều N." → one chunk per article → embeddings → Qdrant (local)
 
 Q&A CSV
@@ -183,6 +186,11 @@ id,cau_hoi,cau_tra_loi
 }
 ```
 
+Allowed values:
+- `cac_y[].nhan`: `DUNG`, `TRAI_LUAT`, `KHONG_CAN_CU`.
+- `cau[].ket_luan`: `DUNG`, `SAI`, `KHONG_CAN_CU`.
+- `tong_ket.cong`: `KHONG_DAT` (some answer is `SAI`), `CAN_XEM_LAI` (no `SAI`, but some answer is `KHONG_CAN_CU`), `DAT` (every answer is `DUNG`).
+
 ## Evaluation
 
 The team tunes on one set and reports on another, so the reported numbers are not fitted to the test questions.
@@ -190,6 +198,10 @@ The team tunes on one set and reports on another, so the reported numbers are no
 - **Dev set:** 10 questions, open to the whole team for tuning.
 - **Test set:** 20 questions, 5 of them deliberately wrong. Only the evaluation owner holds the test set and its answer key. Both are git-ignored (`data/test/test_set*.csv`, `answer_key*.csv`), so they never reach the repo.
 - **Blind runs:** code is frozen first, then the test set is run twice to measure how stable the verdicts are.
+
+**Scoring rule.** A verdict of `SAI` or `KHONG_CAN_CU` both count as flagging an answer:
+- A deliberately wrong answer is **caught** if its verdict is `SAI` or `KHONG_CAN_CU`, and **missed** if it is `DUNG`.
+- A correct answer is a **false alarm** if its verdict is `SAI` or `KHONG_CAN_CU`.
 
 MVP targets:
 

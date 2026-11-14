@@ -237,48 +237,130 @@ def test_llm_mac_dinh_thieu_llm_model_thi_bao_loi_ro_rang(monkeypatch):
         audit._llm_mac_dinh([])
 
 
-# --- Chọn retrieve mặc định: core.retrieve nếu chạy được, không thì BM25 ----------
+# --- Chọn retriever: mặc định core.retrieve, BM25 chỉ khi RETRIEVER=bm25 ---------
 
-def _gan_retrieve(monkeypatch, retrieve_chinh):
-    """Thay core.retrieve bằng module giả; retrieve_chinh=None nghĩa là module chưa có hàm retrieve."""
-    import sys
-    import types
+@pytest.fixture
+def env_rieng(monkeypatch):
+    """Không đọc .env thật; mỗi test tự đặt RETRIEVER."""
+    from core import audit
 
-    mod = types.ModuleType("core.retrieve")
-    if retrieve_chinh is not None:
-        mod.retrieve = retrieve_chinh
-    monkeypatch.setitem(sys.modules, "core.retrieve", mod)
-    da_goi = []
-
-    def bm25(query, k=5):
-        da_goi.append("bm25")
-        return fake_retrieve(query, k)
-
-    monkeypatch.setattr("core.retrieve_bm25.retrieve", bm25)
-    return da_goi
+    monkeypatch.setattr(audit, "_nap_env", lambda: None)
+    monkeypatch.delenv("RETRIEVER", raising=False)
+    return monkeypatch
 
 
-def test_core_retrieve_chua_co_ham_thi_dung_bm25(monkeypatch):
-    da_goi = _gan_retrieve(monkeypatch, None)
-    kq = audit_one("q", "a", llm_fn=fake_llm([y("DUNG")]))
-    assert da_goi == ["bm25"]
+def test_mac_dinh_dung_retrieve_va_get_article_cua_core_retrieve(env_rieng):
+    import core.retrieve
+    from core.audit import chon_nguon
+
+    nguon = chon_nguon()
+    assert nguon.retrieve is core.retrieve.retrieve
+    assert nguon.get_article is core.retrieve.get_article
+    assert "qdrant" in nguon.ten
+
+
+@pytest.mark.parametrize("gia_tri", ["bm25", " BM25 "])
+def test_retriever_bm25_chi_khi_chon_ro(env_rieng, gia_tri):
+    import core.retrieve_bm25
+    from core.audit import chon_nguon
+
+    env_rieng.setenv("RETRIEVER", gia_tri)
+    nguon = chon_nguon()
+    assert nguon.retrieve is core.retrieve_bm25.retrieve
+    assert nguon.get_article is core.retrieve_bm25.get_article
+    assert "bm25" in nguon.ten
+
+
+def test_retriever_la_thi_bao_loi(env_rieng):
+    from core.audit import chon_nguon
+
+    env_rieng.setenv("RETRIEVER", "elastic")
+    with pytest.raises(ValueError, match="RETRIEVER"):
+        chon_nguon()
+
+
+def test_core_retrieve_loi_thi_bao_loi_ngay_khong_chuyen_bm25(env_rieng):
+    da_goi_bm25 = []
+
+    def hong(query, k=5):
+        raise RuntimeError("Chưa có collection")
+
+    env_rieng.setattr("core.retrieve.retrieve", hong)
+    env_rieng.setattr("core.retrieve_bm25.retrieve", lambda q, k=5: da_goi_bm25.append(q) or fake_retrieve(q, k))
+    with pytest.raises(RuntimeError, match="collection"):
+        audit_one("q", "a", llm_fn=fake_llm([y("DUNG")]))
+    assert da_goi_bm25 == []
+
+
+# --- Lấy thêm các Điều chatbot trích bằng get_article ----------------------------
+
+def dieu_gia(n):
+    return {"chunk_id": f"dieu-{n}", "dieu": n, "tieu_de": f"[GIẢ] Điều {n}",
+            "noi_dung": f"Điều {n}. [GIẢ] Điều {n}\n[GIẢ] nội dung riêng của Điều {n}"}
+
+
+def get_article_gia(co=(50, 60, 70, 80)):
+    """get_article giả: ghi lại số Điều được hỏi; Điều không có trong `co` thì trả None."""
+    da_hoi = []
+
+    def _get(dieu):
+        da_hoi.append(dieu)
+        return dieu_gia(dieu) if dieu in co else None
+
+    return _get, da_hoi
+
+
+def chay_trich(cau_tra_loi, cac_y=None, co=(50, 60, 70, 80)):
+    get_fn, da_hoi = get_article_gia(co)
+    da_gui = []
+
+    def llm(messages):
+        da_gui.append(messages)
+        return json.dumps({"cac_y": cac_y or [y("DUNG")]}, ensure_ascii=False), 0.0
+
+    kq = audit_one("q", cau_tra_loi, retrieve_fn=fake_retrieve, get_article_fn=get_fn, llm_fn=llm)
+    return kq, da_hoi, da_gui[0][1]["content"]
+
+
+def test_dieu_chatbot_trich_duoc_lay_them_dua_cho_judge(env_rieng):
+    kq, da_hoi, prompt = chay_trich("Theo Điều 50 khoản 2 thì được nghỉ.")
+    assert da_hoi == [50]
+    assert "[GIẢ] nội dung riêng của Điều 50" in prompt
+
+
+def test_dieu_truy_hoi_chi_gom_top5_khong_gom_dieu_trich_them(env_rieng):
+    kq, _, _ = chay_trich("Theo Điều 50.")
     assert kq["dieu_truy_hoi"] == ["dieu-35", "dieu-36"]
 
 
-def test_core_retrieve_chay_duoc_thi_dung_no(monkeypatch):
-    da_goi = _gan_retrieve(monkeypatch, lambda query, k=5: fake_retrieve(query, k)[:1])
-    kq = audit_one("q", "a", llm_fn=fake_llm([y("DUNG")]))
-    assert da_goi == []
-    assert kq["dieu_truy_hoi"] == ["dieu-35"]
+def test_lay_toi_da_3_dieu_trich_dau_tien_bo_qua_dieu_da_co_trong_top5(env_rieng):
+    _, da_hoi, _ = chay_trich("Điều 35, rồi Điều 50, Điều 50 nữa, Điều 60, Điều 70 và Điều 80.")
+    assert da_hoi == [50, 60]  # 3 Điều khác nhau đầu tiên là 35, 50, 60; Điều 35 đã có trong top-5
 
 
-def test_core_retrieve_loi_khi_chay_thi_chuyen_sang_bm25(monkeypatch):
-    def hong(query, k=5):
-        raise ConnectionError("Qdrant không chạy")
+def test_nhan_ra_chu_dieu_viet_thuong_va_unicode_to_hop(env_rieng):
+    import unicodedata
 
-    da_goi = _gan_retrieve(monkeypatch, hong)
-    audit_one("q", "a", llm_fn=fake_llm([y("DUNG")]))
-    assert da_goi == ["bm25"]
+    _, da_hoi, _ = chay_trich(unicodedata.normalize("NFD", "theo điều 60 và ĐIỀU 70"))
+    assert da_hoi == [60, 70]
+
+
+def test_dieu_trich_khong_ton_tai_thi_bo_qua(env_rieng):
+    kq, da_hoi, prompt = chay_trich("Theo Điều 999.")
+    assert da_hoi == [999]
+    assert kq["ket_luan"] == "DUNG"  # ý giả trích Điều 35 (đã truy hồi)
+
+
+def test_y_dung_trich_dieu_duoc_lay_them_khong_bi_ha_nhan(env_rieng):
+    kq, _, _ = chay_trich("Theo Điều 50.", cac_y=[y("DUNG", trich_dan="Điều 50 khoản 2")])
+    assert kq["cac_y"][0]["nhan"] == "DUNG"
+    assert "ha_nhan" not in kq["cac_y"][0]
+
+
+def test_y_dung_trich_dieu_khong_truy_hoi_cung_khong_duoc_trich_van_bi_ha(env_rieng):
+    kq, _, _ = chay_trich("Theo Điều 50.", cac_y=[y("DUNG", trich_dan="Điều 60")])
+    assert kq["cac_y"][0]["nhan"] == "KHONG_CAN_CU"
+    assert kq["cac_y"][0]["ha_nhan"] is True
 
 
 def test_noi_dung_da_co_dong_dieu_thi_khong_lap_lai_trong_prompt():

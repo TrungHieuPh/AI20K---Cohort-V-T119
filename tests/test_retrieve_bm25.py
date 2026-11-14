@@ -38,3 +38,20 @@ def test_moi_ket_qua_co_du_cac_truong_chunk():
     assert kq["tieu_de"] == "[GIẢ] Làm thêm giờ"
     assert kq["noi_dung"].startswith("Điều 2.")
     assert isinstance(kq["score"], float)
+
+
+# --- get_article: cùng cách gọi với core.retrieve.get_article ---------------------
+
+from core.retrieve_bm25 import get_article  # noqa: E402
+
+
+@pytest.mark.parametrize("dieu", [2, "2", "Điều 2", "Điều 2 khoản 1 điểm a", "điều 2"])
+def test_get_article_nhan_nhieu_cach_ghi(dieu):
+    a = get_article(dieu, path=MOCK)
+    assert a["chunk_id"] == "dieu-2"
+    assert a["noi_dung"].startswith("Điều 2.")
+
+
+@pytest.mark.parametrize("dieu", [99, "không có số"])
+def test_get_article_khong_co_thi_tra_none(dieu):
+    assert get_article(dieu, path=MOCK) is None

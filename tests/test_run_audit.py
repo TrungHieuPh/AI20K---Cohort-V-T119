@@ -95,7 +95,9 @@ def test_csv_thieu_cot_thi_bao_loi(tmp_path):
 
 def test_dong_lenh_ghi_results_json(tmp_path, monkeypatch):
     csv_path = ghi_csv(tmp_path / "in.csv", [(1, "q", "SAI")])
-    monkeypatch.setattr(audit, "audit_one", audit_gia)
+    monkeypatch.setattr(audit, "chon_nguon", lambda: nguon_gia()[0])
+    monkeypatch.setattr(audit, "_kiem_cau_hinh_llm", lambda: "gia/model-gia")
+    monkeypatch.setattr(audit, "audit_one", lambda cau_hoi, cau_tra_loi, **kw: audit_gia(cau_hoi, cau_tra_loi))
     monkeypatch.chdir(tmp_path)
     audit.main([str(csv_path)])
     kq = json.loads((tmp_path / "results.json").read_text(encoding="utf-8"))
@@ -149,3 +151,116 @@ def test_so_cau_bang_tong_cac_loai(tmp_path):
     tk = chay(tmp_path, ["DUNG", "SAI", "LOI", "KHONG_CAN_CU", "DUNG"])["tong_ket"]
     assert tk["so_cau"] == 5
     assert tk["dung"] + tk["sai"] + tk["khong_can_cu"] + tk["loi"] == tk["so_cau"]
+
+
+# --- Chọn retriever một lần cho cả lượt chạy ---------------------------------------
+
+def nguon_gia(hong=False):
+    from core.audit import Nguon
+
+    goi = {"retrieve": 0}
+
+    def retrieve(query, k=5):
+        goi["retrieve"] += 1
+        if hong:
+            raise RuntimeError("Không nạp được model BAAI/bge-m3")
+        return [{"chunk_id": "dieu-35", "dieu": 35, "tieu_de": "[GIẢ]", "noi_dung": "[GIẢ] nội dung"}]
+
+    return Nguon("nguồn giả", retrieve, lambda dieu: None), goi
+
+
+def llm_gia(messages):
+    return json.dumps({"cac_y": [{"noi_dung": "ý", "nhan": "DUNG", "trich_dan": "Điều 35",
+                                  "bang_chung": "", "giai_thich": ""}]}), 0.0
+
+
+def test_retriever_hong_thi_dung_ngay_truoc_khi_chay_cau_nao(tmp_path):
+    nguon, goi = nguon_gia(hong=True)
+    csv_path = ghi_csv(tmp_path / "in.csv", [(1, "q", "a"), (2, "q", "a")])
+    with pytest.raises(RuntimeError, match="bge-m3"):
+        run_audit(csv_path, tmp_path / "r.json", nguon=nguon, llm_fn=llm_gia)
+    assert goi["retrieve"] == 1  # chỉ lần kiểm tra lúc bắt đầu, không thử từng câu
+    assert not (tmp_path / "r.json").exists()
+
+
+def test_ghi_log_retriever_dang_dung_khi_bat_dau(tmp_path, caplog):
+    nguon, _ = nguon_gia()
+    csv_path = ghi_csv(tmp_path / "in.csv", [(1, "q", "a")])
+    with caplog.at_level("INFO", logger="core.audit"):
+        run_audit(csv_path, tmp_path / "r.json", nguon=nguon, llm_fn=llm_gia)
+    assert "nguồn giả" in caplog.records[0].getMessage()
+
+
+def test_cac_cau_dung_retriever_da_chon(tmp_path):
+    nguon, goi = nguon_gia()
+    csv_path = ghi_csv(tmp_path / "in.csv", [(1, "q", "a"), (2, "q", "a")])
+    kq = run_audit(csv_path, tmp_path / "r.json", nguon=nguon, llm_fn=llm_gia)
+    assert [c["dieu_truy_hoi"] for c in kq["cau"]] == [["dieu-35"], ["dieu-35"]]
+    assert kq["tong_ket"]["cong"] == "DAT"
+    assert goi["retrieve"] == 3  # 1 lần kiểm tra + 2 câu
+
+
+# --- Kiểm tra cấu hình LLM một lần lúc bắt đầu (chỉ khi dùng LLM thật) ---------------
+
+class LiteLLMKiemKey:
+    """litellm giả: validate_environment báo thiếu GIA_API_KEY nếu biến không có trong môi trường."""
+
+    @staticmethod
+    def validate_environment(model):
+        import os
+
+        thieu = [] if "GIA_API_KEY" in os.environ else ["GIA_API_KEY"]
+        return {"keys_in_environment": not thieu, "missing_keys": thieu}
+
+
+@pytest.fixture
+def env_llm(monkeypatch):
+    import sys
+
+    monkeypatch.setattr(audit, "_nap_env", lambda: None)
+    monkeypatch.setitem(sys.modules, "litellm", LiteLLMKiemKey)
+    monkeypatch.setenv("LLM_MODEL", "gia/model-gia")
+    monkeypatch.setenv("GIA_API_KEY", "khoa-gia")
+    return monkeypatch
+
+
+def chay_llm_that(tmp_path):
+    nguon, goi = nguon_gia()
+    csv_path = ghi_csv(tmp_path / "in.csv", [(1, "q", "a")])
+    return lambda: run_audit(csv_path, tmp_path / "r.json", nguon=nguon), goi
+
+
+def test_thieu_llm_model_thi_dung_truoc_khi_nap_retriever(tmp_path, env_llm):
+    env_llm.delenv("LLM_MODEL")
+    chay, goi = chay_llm_that(tmp_path)
+    with pytest.raises(RuntimeError, match="LLM_MODEL"):
+        chay()
+    assert goi["retrieve"] == 0
+    assert not (tmp_path / "r.json").exists()
+
+
+def test_thieu_api_key_thi_bao_ten_bien_can_dien(tmp_path, env_llm):
+    env_llm.delenv("GIA_API_KEY")
+    chay, goi = chay_llm_that(tmp_path)
+    with pytest.raises(RuntimeError, match="GIA_API_KEY"):
+        chay()
+    assert goi["retrieve"] == 0
+
+
+def test_api_key_de_trong_tinh_la_thieu_va_moi_truong_giu_nguyen(tmp_path, env_llm):
+    import os
+
+    env_llm.setenv("GIA_API_KEY", "")
+    chay, _ = chay_llm_that(tmp_path)
+    with pytest.raises(RuntimeError, match="GIA_API_KEY"):
+        chay()
+    assert os.environ["GIA_API_KEY"] == ""
+
+
+def test_cau_hinh_llm_du_thi_ghi_log_model_va_chay_tiep(tmp_path, env_llm, caplog):
+    env_llm.setattr(audit, "_llm_mac_dinh", llm_gia)
+    chay, goi = chay_llm_that(tmp_path)
+    with caplog.at_level("INFO", logger="core.audit"):
+        kq = chay()
+    assert kq["tong_ket"]["cong"] == "DAT"
+    assert any("gia/model-gia" in r.getMessage() for r in caplog.records)

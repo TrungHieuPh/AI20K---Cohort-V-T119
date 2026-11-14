@@ -1,6 +1,6 @@
-"""Truy hồi tạm bằng BM25 (dự phòng khi core.retrieve chưa có hoặc lỗi).
+"""Truy hồi tạm bằng BM25. Chỉ dùng khi .env đặt RETRIEVER=bm25 (không tự chuyển sang khi Qdrant lỗi).
 
-Cùng chữ ký với core.retrieve: retrieve(query, k=5) -> list[chunk + score].
+Cùng chữ ký với core.retrieve: retrieve(query, k=5) -> list[chunk + score], get_article(dieu) -> chunk | None.
 Đọc data/law/dieu.jsonl (mỗi dòng một Điều). Tách từ theo âm tiết, thêm cặp âm tiết liền nhau
 vì từ tiếng Việt thường gồm 2 âm tiết ("làm thêm", "báo trước").
 """
@@ -28,6 +28,19 @@ def _nap(path):
     if not chunks:
         raise ValueError(f"Không có Điều nào trong {path}")
     return chunks, BM25Okapi([_tach_tu(c["noi_dung"]) for c in chunks])
+
+
+def get_article(dieu, *, path=None):
+    """Lấy một Điều theo số: 35, "35", "Điều 35" hoặc "Điều 35 khoản 1 điểm a". None nếu không có."""
+    m = re.search(r"(?:điều\s*)?(\d+)", str(dieu), flags=re.IGNORECASE)
+    if not m:
+        return None
+    chunks, _ = _nap(str(path or DUONG_DAN_MAC_DINH))
+    so = int(m.group(1))
+    for c in chunks:
+        if int(c["dieu"]) == so:
+            return {t: c[t] for t in TRUONG_TRA_VE}
+    return None
 
 
 def retrieve(query, k=5, *, path=None):

@@ -8,6 +8,7 @@ import {
   Gauge,
   LayoutDashboard,
   ListChecks,
+  MessagesSquare,
   type LucideIcon,
 } from "lucide-react"
 
@@ -51,6 +52,10 @@ const NAV: { label: string; items: NavItem[] }[] = [
       { href: "/audit/open", label: "Mở kết quả", icon: FolderOpen },
       { href: "/quality", label: "Chất lượng", icon: Gauge },
     ],
+  },
+  {
+    label: "Thử trực tiếp",
+    items: [{ href: "/chat", label: "Hỏi đáp", icon: MessagesSquare }],
   },
   {
     label: "Tra cứu",

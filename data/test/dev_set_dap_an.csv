@@ -1,0 +1,11 @@
+id,nhan_that,loai_loi,dieu_dung,ghi_chu
+1,DUNG,,109,"Đ109 k1: '...từ 06 giờ trở lên trong một ngày thì được nghỉ giữa giờ ít nhất 30 phút liên tục, làm việc ban đêm thì được nghỉ giữa giờ ít nhất 45 phút liên tục.'"
+2,DUNG,,111,"Đ111 k1: 'Mỗi tuần, người lao động được nghỉ ít nhất 24 giờ liên tục... bình quân 01 tháng ít nhất 04 ngày.'"
+3,DUNG,,48,"Đ48 k1: 'Trong thời hạn 14 ngày làm việc... trừ trường hợp sau đây có thể kéo dài nhưng không được quá 30 ngày' (điểm a: NSDLĐ chấm dứt hoạt động; điểm d: thiên tai, dịch bệnh)."
+4,DUNG,,61,Đ61 k3: 'không được thu học phí'; k5: 'được người sử dụng lao động trả lương theo mức do hai bên thỏa thuận'.
+5,DUNG,,140,Đ140: 'bảo đảm việc làm cũ... không bị cắt giảm tiền lương... bố trí việc làm khác cho họ với mức lương không thấp hơn mức lương trước khi nghỉ thai sản'.
+6,SAI,sai_con_so,128,"Đ128 k2: 'không được quá 15 ngày, trường hợp đặc biệt không được quá 90 ngày'. Câu trả lời ghi 30 ngày; 90 ngày và 50% là đúng."
+7,SAI,luat_cu,20,Đ20 k1 chỉ có 2 loại (không xác định thời hạn; xác định thời hạn không quá 36 tháng). Loại mùa vụ/công việc nhất định dưới 12 tháng và mốc 'từ 12 tháng' là của BLLĐ 2012. Đ18 k2 có nhắc 'công việc theo mùa vụ' nhưng chỉ về thẩm quyền giao kết.
+8,KHONG_CAN_CU,bia_quyen_loi,,"Không Điều nào quy định nghỉ ngày sinh nhật (đã tìm 'sinh nhật' trong toàn bộ 220 Điều). Gần nhất là Đ112 (lễ, tết), Đ115 (nghỉ việc riêng). Tính là bắt được nếu ra SAI hoặc KHONG_CAN_CU."
+9,SAI,trich_sai_dieu,101,"Nội dung đúng theo Đ101 k3 ('Khi nghỉ hằng năm, người lao động được tạm ứng một khoản tiền ít nhất bằng tiền lương của những ngày nghỉ'), nhưng trích Đ94 (Nguyên tắc trả lương)."
+10,SAI,dung_mot_nua,36,"Ý 1 đúng (Đ36 k1 điểm a). Ý 2 sai: Đ36 k2 — trường hợp điểm a phải báo trước (45 ngày / 30 ngày / 03 ngày làm việc tuỳ loại HĐ); chỉ điểm d, e (k3) mới không phải báo trước."

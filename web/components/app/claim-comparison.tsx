@@ -69,115 +69,119 @@ export function ClaimComparison({
     <article
       id={id}
       aria-labelledby={`${id}-title`}
-      className="grid scroll-mt-20 overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+      className="@container scroll-mt-20 overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10"
     >
-      <div className="flex flex-col gap-4 p-5">
-        <header className="flex flex-wrap items-center gap-2">
-          <h3
-            id={`${id}-title`}
-            className="font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase"
-          >
-            Ý {number}
-          </h3>
-          <VerdictBadge verdict={label} />
+      {/* Side by side only when the card itself is wide, so it reads in a chat column too. */}
+      <div className="grid @3xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+        <div className="flex flex-col gap-4 p-5">
+          <header className="flex flex-wrap items-center gap-2">
+            <h3 id={`${id}-title`} className="font-heading text-sm font-bold">
+              Ý {number}
+            </h3>
+            <VerdictBadge verdict={label} />
+            {claim.ha_nhan && (
+              <Badge variant="outline">
+                <ArrowDownToLine data-icon="inline-start" aria-hidden />
+                Hệ thống tự hạ nhãn
+              </Badge>
+            )}
+          </header>
+
+          <blockquote className="text-lg leading-relaxed font-medium text-pretty">
+            “{claim.noi_dung}”
+          </blockquote>
+
+          <dl className="flex flex-col gap-3 text-sm">
+            <div className="flex flex-col gap-1">
+              <dt className="text-xs text-muted-foreground">
+                Điều luật làm căn cứ
+              </dt>
+              <dd className="font-mono text-[0.8rem]">
+                {claim.trich_dan ? (
+                  <CitationLinks
+                    text={claim.trich_dan}
+                    phrases={phrases}
+                    handle={handle}
+                  />
+                ) : (
+                  "Không dẫn Điều nào"
+                )}
+              </dd>
+            </div>
+            {claim.bang_chung && (
+              <div className="flex flex-col gap-1">
+                <dt className="text-xs text-muted-foreground">
+                  Đoạn luật AI chấm trích
+                </dt>
+                <dd className="leading-relaxed text-pretty text-muted-foreground">
+                  {claim.bang_chung}
+                </dd>
+              </div>
+            )}
+            {claim.giai_thich && (
+              <div className="flex flex-col gap-1">
+                <dt className="text-xs text-muted-foreground">Vì sao</dt>
+                <dd className="leading-relaxed text-pretty">
+                  {claim.giai_thich}
+                </dd>
+              </div>
+            )}
+          </dl>
+
+          {claim.bang_chung_khop === false && (
+            <Alert role="note">
+              <TriangleAlert aria-hidden />
+              <AlertTitle>Bằng chứng không khớp nguyên văn luật</AlertTitle>
+              <AlertDescription>
+                Chỉ là cảnh báo, nhãn giữ nguyên. Có đoạn AI chấm trích không có
+                y hệt trong Điều luật, nên chỉ đoạn khớp mới được tô vàng.
+              </AlertDescription>
+            </Alert>
+          )}
           {claim.ha_nhan && (
-            <Badge variant="outline">
-              <ArrowDownToLine data-icon="inline-start" aria-hidden />
-              Hệ thống hạ nhãn
-            </Badge>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Nhãn này do hệ thống tự hạ xuống sau khi kiểm tra lại, không phải
+              nhãn AI chấm đưa ra.
+            </p>
           )}
-        </header>
+        </div>
 
-        <blockquote className="text-lg leading-relaxed font-medium text-pretty">
-          “{claim.noi_dung}”
-        </blockquote>
-
-        <dl className="flex flex-col gap-3 text-sm">
-          <div className="flex flex-col gap-1">
-            <dt className="text-xs text-muted-foreground">Căn cứ</dt>
-            <dd className="font-mono text-[0.8rem]">
-              {claim.trich_dan ? (
-                <CitationLinks
-                  text={claim.trich_dan}
-                  phrases={phrases}
-                  handle={handle}
-                />
-              ) : (
-                "Không dẫn Điều nào"
-              )}
-            </dd>
-          </div>
-          {claim.bang_chung && (
-            <div className="flex flex-col gap-1">
-              <dt className="text-xs text-muted-foreground">Bằng chứng</dt>
-              <dd className="leading-relaxed text-pretty text-muted-foreground">
-                {claim.bang_chung}
-              </dd>
-            </div>
-          )}
-          {claim.giai_thich && (
-            <div className="flex flex-col gap-1">
-              <dt className="text-xs text-muted-foreground">Giải thích</dt>
-              <dd className="leading-relaxed text-pretty">
-                {claim.giai_thich}
-              </dd>
-            </div>
-          )}
-        </dl>
-
-        {claim.bang_chung_khop === false && (
-          <Alert role="note">
-            <TriangleAlert aria-hidden />
-            <AlertTitle>Bằng chứng không khớp nguyên văn luật</AlertTitle>
-            <AlertDescription>
-              Chỉ là cảnh báo, nhãn giữ nguyên. Có đoạn judge trích không có y
-              hệt trong Điều luật, nên chỉ đoạn khớp mới được tô vàng.
-            </AlertDescription>
-          </Alert>
-        )}
-        {claim.ha_nhan && (
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Nhãn này do hệ thống hạ xuống sau khi kiểm tra, không phải nhãn
-            judge chấm.
+        <div className="flex flex-col gap-5 border-t border-paper-border bg-paper p-5 @3xl:border-t-0 @3xl:border-l">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+            <Scale aria-hidden className="size-4" />
+            Luật nói gì
           </p>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-5 border-t border-paper-border bg-paper p-5 lg:border-t-0 lg:border-l">
-        <p className="flex items-center gap-1.5 font-mono text-[0.7rem] tracking-wider text-muted-foreground uppercase">
-          <Scale aria-hidden className="size-3.5" />
-          Đối chiếu với luật
-        </p>
-        {citations.length === 0 ? (
-          <Empty className="p-4">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <FileQuestion aria-hidden />
-              </EmptyMedia>
-              <EmptyTitle>
-                {claim.nhan === "KHONG_CAN_CU"
-                  ? "Không có căn cứ trong văn bản luật"
-                  : "Không dẫn Điều luật nào"}
-              </EmptyTitle>
-              <EmptyDescription>
-                Không có Điều nào của Bộ luật Lao động được dẫn làm căn cứ cho ý
-                này.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : (
-          citations.map((c) => (
-            <CitedArticle
-              key={c.article}
-              dieu={c.article}
-              picks={c.picks}
-              article={articles.get(c.article)}
-              status={status}
-              phrases={phrases}
-              handle={handle}
-            />
-          ))
-        )}
+          {citations.length === 0 ? (
+            <Empty className="p-4">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <FileQuestion aria-hidden />
+                </EmptyMedia>
+                <EmptyTitle>
+                  {claim.nhan === "KHONG_CAN_CU"
+                    ? "Không có căn cứ trong văn bản luật"
+                    : "Không dẫn Điều luật nào"}
+                </EmptyTitle>
+                <EmptyDescription>
+                  Không có Điều nào của Bộ luật Lao động được dẫn làm căn cứ cho
+                  ý này.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            citations.map((c) => (
+              <CitedArticle
+                key={c.article}
+                dieu={c.article}
+                picks={c.picks}
+                article={articles.get(c.article)}
+                status={status}
+                phrases={phrases}
+                handle={handle}
+              />
+            ))
+          )}
+        </div>
       </div>
     </article>
   )

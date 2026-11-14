@@ -1,6 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react"
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react"
 import { LockKeyhole, Pause, Play } from "lucide-react"
 
 import { SectionHeading } from "@/components/landing/section-heading"
@@ -26,8 +32,9 @@ function useReducedMotion() {
 const { chapters, duration } = WALKTHROUGH
 
 /**
- * The screen recording, framed as a browser window, with its four chapters below as a
- * segmented progress bar. It plays muted while on screen and pauses off screen; with
+ * The screen recording, framed as a browser window, with its four chapters as a
+ * segmented progress bar: under the video on narrow screens, and down its right side
+ * on wide ones, so the video stays large and the steps stay on screen beside it. It plays muted while on screen and pauses off screen; with
  * reduced motion it waits for the play button. Once the viewer pauses it, scrolling
  * never restarts it (WCAG 2.2.2).
  */
@@ -97,23 +104,29 @@ export function WalkthroughSection() {
     <section
       id="walkthrough"
       aria-labelledby="walkthrough-title"
-      className="scroll-mt-16 border-t border-hero-border"
+      className="scroll-mt-16"
     >
       <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 lg:py-24">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
           <SectionHeading
             id="walkthrough-title"
             eyebrow={<>Xem thao tác · {formatClock(duration)}</>}
-            title="Từ bảng tổng quan tới đúng khoản luật làm bằng chứng."
+            title="Hỏi một câu, nhận câu trả lời kèm đúng Điều luật làm căn cứ."
           />
-          <p className="max-w-sm leading-relaxed text-pretty text-hero-muted lg:pb-1.5">
-            Quay liền một mạch trên ứng dụng, với lượt kiểm định demo. Bấm một
-            bước bên dưới để tua tới đó.
+          <p
+            data-reveal
+            className="max-w-sm leading-relaxed text-pretty text-hero-muted lg:pb-1.5"
+          >
+            Quay liền một mạch trên trang Hỏi đáp, với chatbot thật đang trả
+            lời. Bấm một bước để tua tới đó.
           </p>
         </div>
 
-        <figure className="mt-10 flex flex-col gap-6">
-          <div className="overflow-hidden rounded-xl border border-hero-border bg-hero-raised shadow-2xl shadow-black/40">
+        <figure className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_15rem] lg:gap-8">
+          <div
+            data-reveal
+            className="overflow-hidden rounded-xl border border-hero-border bg-hero-raised shadow-2xl shadow-black/40"
+          >
             <div className="flex items-center gap-3 border-b border-hero-border px-3 py-2 sm:px-4">
               <button
                 type="button"
@@ -130,13 +143,13 @@ export function WalkthroughSection() {
               <p className="flex min-w-0 flex-1 items-center gap-2 rounded-md bg-hero px-3 py-1.5 font-mono text-xs text-hero-muted">
                 <LockKeyhole aria-hidden className="size-3 shrink-0" />
                 <span className="truncate">
-                  localhost:3000
+                  lexragas.io.vn
                   <span className="text-hero-foreground">{current.route}</span>
                 </span>
               </p>
               <p
                 aria-hidden
-                className="hidden shrink-0 font-mono text-xs text-hero-muted tabular-nums sm:block"
+                className="hidden shrink-0 text-xs font-semibold text-hero-muted tabular-nums sm:block"
               >
                 {formatClock(time)} / {formatClock(duration)}
               </p>
@@ -152,12 +165,12 @@ export function WalkthroughSection() {
                 poster={WALKTHROUGH.poster}
                 width={WALKTHROUGH.width}
                 height={WALKTHROUGH.height}
-                aria-label="Video thao tác trên ứng dụng lexgate, không có tiếng. Các bước được liệt kê bên dưới."
+                aria-label="Video hỏi đáp với lexgate, không có tiếng. Các bước được liệt kê ngay sau video."
                 onPlay={() => setPlaying(true)}
                 onPause={() => setPlaying(false)}
                 onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
                 onClick={toggle}
-                className="block aspect-[16/10] h-auto w-full cursor-pointer bg-hero"
+                className="block aspect-video h-auto w-full cursor-pointer bg-hero"
               >
                 {WALKTHROUGH.sources.map((s) => (
                   <source key={s.src} src={s.src} type={s.type} />
@@ -181,7 +194,10 @@ export function WalkthroughSection() {
             {chapters.map((c) => `${c.label}: ${c.detail}`).join(" ")}
           </figcaption>
 
-          <ol className="grid grid-cols-2 gap-x-5 gap-y-6 lg:grid-cols-4">
+          <ol
+            data-reveal
+            className="grid grid-cols-2 gap-x-5 gap-y-6 lg:grid-cols-1 lg:grid-rows-4 lg:gap-y-2"
+          >
             {chapters.map((chapter, i) => {
               const end = chapters[i + 1]?.start ?? duration
               const progress =
@@ -199,35 +215,38 @@ export function WalkthroughSection() {
                     type="button"
                     onClick={() => seek(chapter.start)}
                     aria-current={i === active ? "step" : undefined}
-                    className="group flex w-full flex-col gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-hero"
+                    className="group flex w-full flex-col gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-hero lg:h-full lg:flex-row lg:gap-4"
                   >
+                    {/* Fills left to right under the video, top to bottom beside it. */}
                     <span
                       aria-hidden
-                      className="block h-1 w-full overflow-hidden rounded-full bg-hero-border"
+                      className="block h-1 w-full overflow-hidden rounded-full bg-hero-border lg:h-auto lg:w-1 lg:shrink-0 lg:self-stretch"
                     >
                       <span
-                        className="block h-full origin-left rounded-full bg-hero-accent"
-                        style={{ transform: `scaleX(${progress})` }}
+                        className="block size-full origin-left scale-x-(--progress) rounded-full bg-hero-accent lg:origin-top lg:scale-x-100 lg:scale-y-(--progress)"
+                        style={{ "--progress": progress } as CSSProperties}
                       />
                     </span>
-                    <span className="flex items-baseline gap-2.5">
-                      <span className="font-mono text-xs text-hero-muted tabular-nums">
-                        <span className="sr-only">Tua tới </span>
-                        {formatClock(chapter.start)}
+                    <span className="flex flex-col gap-3 lg:gap-1.5 lg:py-1">
+                      <span className="flex items-baseline gap-2.5">
+                        <span className="text-sm font-semibold text-hero-muted tabular-nums">
+                          <span className="sr-only">Tua tới </span>
+                          {formatClock(chapter.start)}
+                        </span>
+                        <span
+                          className={cn(
+                            "font-heading text-[1.05rem] font-bold transition-colors",
+                            i === active
+                              ? "text-hero-foreground"
+                              : "text-hero-muted group-hover:text-hero-foreground"
+                          )}
+                        >
+                          {chapter.label}
+                        </span>
                       </span>
-                      <span
-                        className={cn(
-                          "font-heading text-[1.05rem] font-bold transition-colors",
-                          i === active
-                            ? "text-hero-foreground"
-                            : "text-hero-muted group-hover:text-hero-foreground"
-                        )}
-                      >
-                        {chapter.label}
+                      <span className="text-sm leading-snug text-pretty text-hero-muted">
+                        {chapter.detail}
                       </span>
-                    </span>
-                    <span className="text-sm leading-snug text-pretty text-hero-muted">
-                      {chapter.detail}
                     </span>
                   </button>
                 </li>

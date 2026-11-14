@@ -1,7 +1,8 @@
 /**
  * The screen recording on the landing (public/demo/). It was made by driving the
- * production build in headless Chrome over the demo run, in one continuous take; the
- * chapter times are the marks the recording script wrote while it drove the app.
+ * production build in headless Chrome on /chat, with the real chat backend answering,
+ * in one continuous take; the chapter times are the marks the recording script wrote
+ * while it drove the app, and the details describe what the take shows.
  */
 export const WALKTHROUGH = {
   sources: [
@@ -10,33 +11,35 @@ export const WALKTHROUGH = {
   ],
   poster: "/demo/walkthrough-poster.jpg",
   width: 1280,
-  height: 800,
+  height: 720,
   /** Seconds. */
-  duration: 21.4,
+  duration: 25.6,
   chapters: [
     {
       start: 0,
-      label: "Tổng quan",
-      detail: "Cổng Không đạt: 2 câu Sai trong 4 câu mẫu.",
-      route: "/dashboard",
+      label: "Đặt câu hỏi",
+      detail: "Gõ câu hỏi: nghỉ việc phải báo trước bao nhiêu ngày?",
+      route: "/chat",
     },
     {
-      start: 5.9,
-      label: "Mở câu #2",
-      detail: "Câu trả lời được tách thành từng ý và chấm riêng.",
-      route: "/audit/2",
+      start: 5,
+      label: "Nhận trả lời",
+      detail:
+        "lexgate tìm Điều liên quan rồi trả lời 45, 30 hoặc 03 ngày tùy hợp đồng.",
+      route: "/chat",
     },
     {
       start: 11.5,
-      label: "Bấm trích dẫn",
-      detail: "Ý sai dẫn Điều 107 khoản 2 và khoản 3.",
-      route: "/audit/2",
+      label: "Đọc căn cứ",
+      detail: "Bấm Điều 35 khoản 1 để mở đúng Điều luật câu trả lời dựa vào.",
+      route: "/chat",
     },
     {
-      start: 14,
-      label: "Đọc khoản luật",
-      detail: "Đoạn bằng chứng được tô vàng ngay trong Điều luật.",
-      route: "/audit/2",
+      start: 17.3,
+      label: "Điều đã tìm",
+      detail:
+        "5 Điều tìm được, gần câu hỏi nhất ở trên; Điều được dẫn có đánh dấu.",
+      route: "/chat",
     },
   ],
 } as const

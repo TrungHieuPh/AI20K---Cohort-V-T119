@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowRight, CornerDownRight, FileText } from "lucide-react"
 
 import { SectionHeading } from "@/components/landing/section-heading"
+import { Badge } from "@/components/ui/badge"
 import { VerdictBadge } from "@/components/verdict-badge"
 import type { LawInfo } from "@/lib/data"
 import { formatSeconds, formatUsd } from "@/lib/format"
@@ -69,7 +70,9 @@ export function HowItWorks({
           </p>
         </div>
       ),
-      tag: "data/demo/demo_samples.csv",
+      tag: (
+        <code className="font-mono text-xs">data/demo/demo_samples.csv</code>
+      ),
     },
     {
       title: "Tìm Điều liên quan",
@@ -85,19 +88,19 @@ export function HowItWorks({
                 href={`/law/${a.dieu}`}
                 className="flex items-baseline gap-3 px-1 py-2.5 transition-colors hover:bg-hero/60"
               >
-                <span className="w-4 font-mono text-xs text-hero-muted tabular-nums">
+                <span className="w-4 text-sm font-semibold text-hero-muted tabular-nums">
                   {i + 1}
                 </span>
-                <span className="w-20 shrink-0 font-mono text-sm whitespace-nowrap text-hero-accent">
+                <span className="w-[4.5rem] shrink-0 text-sm font-semibold whitespace-nowrap text-hero-accent tabular-nums">
                   Điều {a.dieu}
                 </span>
                 {/* The pill drops under the title when the row is too narrow for both. */}
                 <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="text-sm text-pretty">{a.title}</span>
                   {a.citedByAnswer && (
-                    <span className="rounded-full border border-hero-accent/40 px-2 py-0.5 text-[0.7rem] font-semibold whitespace-nowrap text-hero-accent">
+                    <Badge variant="accent" surface="dark">
                       câu trả lời trích
-                    </span>
+                    </Badge>
                   )}
                 </span>
               </Link>
@@ -113,8 +116,8 @@ export function HowItWorks({
       panel: (
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <VerdictBadge verdict={CLAIM_LABEL[claim.nhan]} />
-            <span className="font-mono text-xs text-hero-accent">
+            <VerdictBadge verdict={CLAIM_LABEL[claim.nhan]} surface="dark" />
+            <span className="text-sm font-semibold text-hero-accent">
               {claim.trich_dan}
             </span>
           </div>
@@ -123,10 +126,12 @@ export function HowItWorks({
             <CornerDownRight aria-hidden className="mt-0.5 size-4 shrink-0" />
             {claim.giai_thich}
           </p>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 border-t border-hero-border pt-3">
-            <span className="mr-1 text-xs text-hero-muted">Ba nhãn:</span>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 border-hero-border pt-3">
+            <span className="mr-1 text-xs font-bold tracking-[0.08em] text-hero-muted uppercase">
+              Ba nhãn
+            </span>
             {Object.values(CLAIM_LABEL).map((v) => (
-              <VerdictBadge key={v.label} verdict={v} />
+              <VerdictBadge key={v.label} verdict={v} surface="dark" />
             ))}
           </div>
         </div>
@@ -139,16 +144,19 @@ export function HowItWorks({
       panel: (
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-mono text-xs text-hero-muted">
+            <span className="font-semibold text-hero-muted tabular-nums">
               Câu #{question.id}
             </span>
             <span className="text-hero-muted">{questionRule?.when}</span>
             <ArrowRight aria-hidden className="size-3.5 text-hero-muted" />
             <span className="sr-only">nên câu này</span>
-            <VerdictBadge verdict={QUESTION_VERDICT[question.ket_luan]} />
+            <VerdictBadge
+              verdict={QUESTION_VERDICT[question.ket_luan]}
+              surface="dark"
+            />
           </div>
           <div className="flex flex-col gap-2">
-            <p className="font-mono text-xs text-hero-muted">
+            <p className="text-xs font-bold tracking-[0.08em] text-hero-muted uppercase">
               Cả lượt · {summary.so_cau} câu
             </p>
             <ol className="flex flex-col gap-1">
@@ -173,6 +181,7 @@ export function HowItWorks({
                     </span>
                     <VerdictBadge
                       verdict={GATE_VERDICT[rule.gate]}
+                      surface="dark"
                       className={cn(!fired && "opacity-60")}
                     />
                   </li>
@@ -182,7 +191,13 @@ export function HowItWorks({
           </div>
         </div>
       ),
-      tag: `Câu #${question.id}: ${formatSeconds(question.thoi_gian_ms)} · ${formatUsd(question.chi_phi_usd)} · ghi vào results.json`,
+      tag: (
+        <>
+          Câu #{question.id}: {formatSeconds(question.thoi_gian_ms)} ·{" "}
+          {formatUsd(question.chi_phi_usd)} · ghi vào{" "}
+          <code className="font-mono text-xs">results.json</code>
+        </>
+      ),
     },
   ]
 
@@ -190,12 +205,11 @@ export function HowItWorks({
     <section
       id="how-it-works"
       aria-labelledby="how-title"
-      className="scroll-mt-16 border-t border-hero-border"
+      className="scroll-mt-16"
     >
       <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 lg:py-28">
         <SectionHeading
           id="how-title"
-          index={2}
           eyebrow="Cách hoạt động"
           title={`Theo chân câu #${question.id} qua bốn bước.`}
           lead="Không chấm cả câu trả lời bằng một điểm mơ hồ: từng ý phải chỉ ra được Điều, khoản làm căn cứ. Mọi giá trị dưới đây lấy từ lượt chạy demo."
@@ -205,7 +219,8 @@ export function HowItWorks({
           {steps.map((step, i) => (
             <li
               key={step.title}
-              className="relative grid gap-5 pb-12 pl-12 last:pb-0 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-12 lg:pl-14"
+              data-reveal
+              className="relative grid grid-cols-1 gap-5 pb-12 pl-12 last:pb-0 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-12 lg:pl-14"
             >
               {/* The rail joining the step numbers. */}
               {i < steps.length - 1 && (
@@ -216,7 +231,7 @@ export function HowItWorks({
               )}
               <span
                 aria-hidden
-                className="absolute top-0 left-0 grid size-8 place-items-center rounded-full border border-hero-accent/50 font-mono text-xs font-medium text-hero-accent lg:size-10 lg:text-sm"
+                className="absolute top-0 left-0 grid size-8 place-items-center rounded-full border border-hero-accent/50 bg-hero text-sm font-extrabold text-hero-accent tabular-nums lg:size-10 lg:text-base"
               >
                 {String(i + 1).padStart(2, "0")}
               </span>
@@ -228,9 +243,11 @@ export function HowItWorks({
                 <p className="leading-relaxed text-pretty text-hero-muted">
                   {step.text}
                 </p>
-                <p className="font-mono text-xs text-hero-accent">{step.tag}</p>
+                <p className="text-sm font-semibold text-hero-accent">
+                  {step.tag}
+                </p>
               </div>
-              <div className="rounded-xl border border-hero-border bg-hero-raised/60 p-4 sm:p-5">
+              <div className="rounded-xl border border-hero-border bg-hero-raised p-4 sm:p-5">
                 {step.panel}
               </div>
             </li>

@@ -32,11 +32,12 @@ import {
 import { VerdictBadge } from "@/components/verdict-badge"
 import { getScore } from "@/lib/data"
 import { formatPercent, formatScore, formatUsd } from "@/lib/format"
+import { PAGE } from "@/lib/pages"
 import type { QuestionVerdict, ScoreMetric, ScoreRow } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { QUESTION_VERDICT } from "@/lib/verdicts"
 
-export const metadata: Metadata = { title: "Chất lượng" }
+export const metadata: Metadata = { title: PAGE.quality }
 
 const ERROR_KIND: Record<string, string> = {
   sai_con_so: "Sai con số",
@@ -144,12 +145,12 @@ export default async function QualityPage() {
       status: metricStatus(score.trich_dung_dieu),
     },
     {
-      label: "Điều đúng trong top-5",
+      label: "Tìm đúng Điều luật",
       figure:
         score.truy_hoi_dung.ti_le === null
           ? "—"
           : formatPercent(score.truy_hoi_dung.ti_le),
-      detail: `${score.truy_hoi_dung.dat}/${score.truy_hoi_dung.tong} câu có Điều đúng khi truy hồi`,
+      detail: `${score.truy_hoi_dung.dat}/${score.truy_hoi_dung.tong} câu có Điều đúng trong 5 Điều tìm được`,
       target: `Mục tiêu ≥ ${formatPercent(score.truy_hoi_dung.muc_tieu)}`,
       status: metricStatus(score.truy_hoi_dung),
     },
@@ -174,7 +175,7 @@ export default async function QualityPage() {
           status: <Status tone="muted" icon={Clock} label="Chưa chạy lần 2" />,
         },
     {
-      label: "Thời gian (quy về 20 câu)",
+      label: "Thời gian cho 20 câu",
       figure: `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(score.thoi_gian.quy_ve_20_cau_s)} s`,
       detail: `Thực đo ${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(score.thoi_gian.tong_s)} s cho ${score.so_cau} câu`,
       target: `Mục tiêu ≤ ${score.thoi_gian.muc_tieu_s} s`,
@@ -191,9 +192,9 @@ export default async function QualityPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow={`Bộ dev ${score.so_cau} câu · có đáp án`}
-        title="Chất lượng"
-        description="Bộ kiểm định tự chấm chính nó: chạy trên bộ câu đã biết đáp án rồi so kết luận với nhãn thật. Đây là con số để tin hay không tin cổng kiểm định."
+        eyebrow={`Bộ dev ${score.so_cau} câu đã biết đáp án`}
+        title={PAGE.quality}
+        description="lexgate tự chấm chính nó: chạy trên những câu đã biết đáp án, rồi so kết luận với đáp án. Con số này cho biết có nên tin cổng kiểm định hay không."
       />
 
       <Alert role="note">
@@ -201,9 +202,9 @@ export default async function QualityPage() {
         <AlertTitle>Đọc số liệu này thế nào</AlertTitle>
         <AlertDescription>
           Bộ dev do AI soạn (đã đối chiếu nguyên văn Bộ luật) nên dễ hơn câu hỏi
-          thật. Số cuối cùng sẽ lấy từ bộ test kín 20 câu, chạy mù 2 lần.
-          Faithfulness ở đây tính từ nhãn của bộ kiểm định, chưa dùng thư viện
-          Ragas.
+          thật. Số cuối cùng sẽ lấy từ bộ test kín 20 câu, chạy mù 2 lần. Tỉ lệ
+          ý đúng (faithfulness) ở đây tính từ nhãn của chính bộ kiểm, chưa dùng
+          thư viện Ragas.
         </AlertDescription>
       </Alert>
 
@@ -279,15 +280,19 @@ export default async function QualityPage() {
               <dd className="text-right font-semibold tabular-nums">
                 {formatUsd(score.chi_phi_usd)}
               </dd>
-              <dt className="text-muted-foreground">Faithfulness trung bình</dt>
+              <dt className="text-muted-foreground">Tỉ lệ ý đúng trung bình</dt>
               <dd className="text-right font-semibold tabular-nums">
                 {formatScore(score.faithfulness_tb)}
               </dd>
-              <dt className="text-muted-foreground">Câu cài sai bị Lỗi</dt>
+              <dt className="text-muted-foreground">
+                Câu cài sai không kiểm được
+              </dt>
               <dd className="text-right font-semibold tabular-nums">
                 {score.loi.cau_sai}
               </dd>
-              <dt className="text-muted-foreground">Câu đúng bị Lỗi</dt>
+              <dt className="text-muted-foreground">
+                Câu đúng không kiểm được
+              </dt>
               <dd className="text-right font-semibold tabular-nums">
                 {score.loi.cau_dung}
               </dd>
@@ -298,7 +303,7 @@ export default async function QualityPage() {
 
       <section aria-labelledby="detail-title" className="flex flex-col gap-3">
         <SectionLabel id="detail-title">
-          Từng câu · {score.chi_tiet.length} câu
+          Từng câu ({score.chi_tiet.length} câu)
         </SectionLabel>
         <div className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
           <Table>
@@ -306,17 +311,19 @@ export default async function QualityPage() {
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-12 pl-4">#</TableHead>
                 <TableHead>
-                  Nhãn thật
-                  <span className="sm:hidden"> → kết luận</span>
+                  Đáp án
+                  <span className="sm:hidden"> → lexgate</span>
                 </TableHead>
                 <TableHead className="hidden md:table-cell">Loại lỗi</TableHead>
-                <TableHead className="hidden sm:table-cell">Kết luận</TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  lexgate kết luận
+                </TableHead>
                 <TableHead>Kết quả</TableHead>
                 <TableHead className="hidden lg:table-cell">
                   Trích đúng Điều
                 </TableHead>
                 <TableHead className="hidden pr-4 lg:table-cell">
-                  Truy hồi đúng
+                  Tìm đúng Điều
                 </TableHead>
               </TableRow>
             </TableHeader>

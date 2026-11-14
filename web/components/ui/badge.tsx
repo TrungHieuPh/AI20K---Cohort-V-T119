@@ -27,16 +27,66 @@ const badgeVariants = cva(
           "border-verdict-ungrounded/25 bg-verdict-ungrounded-soft text-verdict-ungrounded",
         error:
           "border-verdict-error/25 bg-verdict-error-soft text-verdict-error",
+        // A neutral note next to an item, e.g. "câu trả lời trích" on a retrieved article.
+        accent: "border-primary/20 bg-secondary text-secondary-foreground",
       },
       size: {
         default: "",
         // A headline verdict, e.g. the release gate.
         lg: "h-8 gap-1.5 px-3 text-sm has-data-[icon=inline-start]:pl-2.5 [&>svg]:size-4!",
       },
+      // The landing's navy: a tinted label rather than a light sticker, colours below.
+      surface: {
+        light: "",
+        dark: "rounded-md font-semibold",
+      },
     },
+    compoundVariants: [
+      {
+        surface: "dark",
+        variant: "correct",
+        className:
+          "border-hero-correct/35 bg-hero-correct/14 text-hero-correct",
+      },
+      {
+        surface: "dark",
+        variant: "wrong",
+        className: "border-hero-wrong/35 bg-hero-wrong/14 text-hero-wrong",
+      },
+      {
+        surface: "dark",
+        variant: "ungrounded",
+        className:
+          "border-hero-ungrounded/35 bg-hero-ungrounded/14 text-hero-ungrounded",
+      },
+      {
+        // --hero-error is too dim for text on navy; the word stays in the muted ink.
+        surface: "dark",
+        variant: "error",
+        className: "border-hero-error/50 bg-hero-error/14 text-hero-muted",
+      },
+      {
+        surface: "dark",
+        variant: "accent",
+        className: "border-hero-accent/35 bg-hero-accent/10 text-hero-accent",
+      },
+      {
+        surface: "dark",
+        size: "default",
+        className:
+          "h-6 px-2 text-[0.8rem] has-data-[icon=inline-start]:pl-1.5 [&>svg]:size-3.5!",
+      },
+      {
+        surface: "dark",
+        size: "lg",
+        className:
+          "h-9 gap-2 px-3.5 text-base has-data-[icon=inline-start]:pl-3 [&>svg]:size-[1.1rem]!",
+      },
+    ],
     defaultVariants: {
       variant: "default",
       size: "default",
+      surface: "light",
     },
   }
 )
@@ -45,6 +95,7 @@ function Badge({
   className,
   variant = "default",
   size = "default",
+  surface = "light",
   render,
   ...props
 }: useRender.ComponentProps<"span"> & VariantProps<typeof badgeVariants>) {
@@ -52,7 +103,7 @@ function Badge({
     defaultTagName: "span",
     props: mergeProps<"span">(
       {
-        className: cn(badgeVariants({ variant, size }), className),
+        className: cn(badgeVariants({ variant, size, surface }), className),
       },
       props
     ),

@@ -34,7 +34,7 @@ export function PageHeader({
     <header className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
       <div className="flex min-w-0 flex-col gap-2.5">
         {eyebrow && (
-          <p className="font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
+          <p className="text-sm font-semibold text-muted-foreground">
             {eyebrow}
           </p>
         )}
@@ -55,7 +55,69 @@ export function PageHeader({
   )
 }
 
-/** Small uppercase heading for a block inside a page. */
+/**
+ * A page's opening on the landing's navy grid, right under the bar: what the page is
+ * for in large type, then `children` (a short list, key numbers) and, on wide screens,
+ * `aside` beside it (a form, a verdict).
+ */
+export function PageHero({
+  eyebrow,
+  title,
+  description,
+  aside,
+  children,
+}: {
+  eyebrow?: React.ReactNode
+  title: React.ReactNode
+  description?: React.ReactNode
+  aside?: React.ReactNode
+  children?: React.ReactNode
+}) {
+  return (
+    <div className="bg-hero bg-grid text-hero-foreground [--ring:var(--hero-accent)] md:-ml-20 md:pl-20">
+      <div
+        className={cn(
+          "mx-auto grid w-full max-w-6xl items-start gap-8 px-4 pt-10 pb-12 sm:px-6 lg:gap-12 lg:pt-14 lg:pb-16",
+          aside && "lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+        )}
+      >
+        <header className="flex min-w-0 flex-col gap-4">
+          {eyebrow && <Eyebrow tone="dark">{eyebrow}</Eyebrow>}
+          <h1 className="font-heading text-[2.25rem] leading-[1.08] font-extrabold tracking-tight text-balance sm:text-5xl">
+            {title}
+          </h1>
+          {description && (
+            <p className="max-w-xl text-[1.05rem] leading-relaxed text-pretty text-hero-muted">
+              {description}
+            </p>
+          )}
+          {children}
+        </header>
+        {aside}
+      </div>
+    </div>
+  )
+}
+
+/** The landing's "§ …" section label: on paper in primary, on navy in the light accent. */
+export function Eyebrow({
+  tone = "light",
+  className,
+  ...props
+}: React.ComponentProps<"p"> & { tone?: "light" | "dark" }) {
+  return (
+    <p
+      className={cn(
+        "text-sm font-bold tracking-[0.08em] uppercase",
+        tone === "dark" ? "text-hero-accent" : "text-primary",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+/** Small heading for a block inside a page, written as a plain sentence. */
 export function SectionLabel({
   className,
   ...props
@@ -63,7 +125,7 @@ export function SectionLabel({
   return (
     <h2
       className={cn(
-        "font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase",
+        "font-heading text-base font-bold text-foreground",
         className
       )}
       {...props}

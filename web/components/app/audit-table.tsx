@@ -45,13 +45,14 @@ interface Row {
   flag: string | null
 }
 
-/** Names the warnings on a question's claims, for the "Cờ" column. */
+/** Names the warnings on a question's claims, for the "Cảnh báo" column. */
 function flagOf(q: AuditedQuestion): string | null {
   const flagged = q.cac_y.filter(isFlagged)
   if (!flagged.length) return null
   const kinds = []
-  if (flagged.some((c) => c.bang_chung_khop === false)) kinds.push("bằng chứng")
-  if (flagged.some((c) => c.ha_nhan)) kinds.push("hạ nhãn")
+  if (flagged.some((c) => c.bang_chung_khop === false))
+    kinds.push("trích dẫn lệch")
+  if (flagged.some((c) => c.ha_nhan)) kinds.push("tự hạ nhãn")
   return kinds.join(", ")
 }
 
@@ -71,8 +72,8 @@ function toRow(q: AuditedQuestion): Row {
 /** Long words of the flag, for screen readers and the tooltip. */
 function flagTitle(flag: string) {
   return `Cảnh báo: ${flag
-    .replace("bằng chứng", "bằng chứng không khớp nguyên văn luật")
-    .replace("hạ nhãn", "hệ thống hạ nhãn")}`
+    .replace("trích dẫn lệch", "trích dẫn không khớp nguyên văn luật")
+    .replace("tự hạ nhãn", "hệ thống tự hạ nhãn của AI chấm")}`
 }
 
 function Flag({ flag }: { flag: string | null }) {
@@ -184,7 +185,7 @@ export function AuditTable({ questions }: { questions: AuditedQuestion[] }) {
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pl-7">
                     <VerdictBadge verdict={QUESTION_VERDICT[r.verdict]} />
                     <span className="font-mono text-xs text-muted-foreground">
-                      {r.claims} ý · faithfulness {formatScore(r.faithfulness)}
+                      {r.claims} ý · ý đúng {formatScore(r.faithfulness)}
                     </span>
                     {r.flag && <Flag flag={r.flag} />}
                   </div>
@@ -202,8 +203,8 @@ export function AuditTable({ questions }: { questions: AuditedQuestion[] }) {
                   <TableHead>Câu hỏi</TableHead>
                   <TableHead>Kết luận</TableHead>
                   <TableHead className="text-right">Số ý</TableHead>
-                  <TableHead className="text-right">Faithfulness</TableHead>
-                  <TableHead>Cờ</TableHead>
+                  <TableHead className="text-right">Tỉ lệ ý đúng</TableHead>
+                  <TableHead>Cảnh báo</TableHead>
                   <TableHead className="w-10 pr-4">
                     <span className="sr-only">Mở</span>
                   </TableHead>

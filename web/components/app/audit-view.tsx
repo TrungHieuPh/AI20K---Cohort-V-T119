@@ -10,6 +10,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { VerdictBadge } from "@/components/verdict-badge"
 import { formatScore, formatSeconds, formatUsd } from "@/lib/format"
+import { PAGE } from "@/lib/pages"
 import { cn } from "@/lib/utils"
 import { GATE_VERDICT, gateRuleFor, lowerFirst } from "@/lib/verdicts"
 
@@ -20,7 +21,7 @@ export function AuditView() {
   const rule = gateRuleFor(summary.cong)
 
   const metrics = [
-    { term: "Faithfulness TB", value: formatScore(summary.faithfulness_tb) },
+    { term: "Tỉ lệ ý đúng TB", value: formatScore(summary.faithfulness_tb) },
     { term: "Tổng thời gian", value: formatSeconds(run.totalLatencyMs) },
     { term: "Tổng chi phí", value: formatUsd(run.totalCostUsd) },
   ]
@@ -29,15 +30,15 @@ export function AuditView() {
     <PageShell>
       <PageHeader
         eyebrow={sourceLabel(source)}
-        title="Kiểm định"
-        description="Kết luận cho từng câu trả lời của chatbot. Mở một câu để xem từng ý được đối chiếu với Điều luật nào."
+        title={PAGE.audit}
+        description="Kết luận cho từng câu trả lời của chatbot. Bấm vào một câu để xem từng ý được so với Điều luật nào."
         actions={
           <Link
             href="/audit/open"
             className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
           >
             <FolderOpen data-icon="inline-start" aria-hidden />
-            Mở results.json khác
+            Mở tệp kết quả khác
           </Link>
         }
       />

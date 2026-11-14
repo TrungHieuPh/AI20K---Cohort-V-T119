@@ -173,8 +173,8 @@ export default async function ArticlePage({
               </CardTitle>
               <CardDescription>
                 {refs.length
-                  ? "Các câu hỏi có ý trích Điều này, hoặc được truy hồi Điều này làm căn cứ."
-                  : "Không câu nào trong lượt demo trích hay truy hồi Điều này."}
+                  ? "Các câu có ý trích Điều này, hoặc đã tìm ra Điều này khi kiểm."
+                  : "Không câu nào trong lượt demo trích hay tìm ra Điều này."}
               </CardDescription>
             </CardHeader>
             {refs.length > 0 && (
@@ -244,11 +244,11 @@ function AuditRef({ item: ref }: { item: ArticleAuditRef }) {
           </>
         ) : (
           <span className="text-xs text-muted-foreground">
-            Chỉ được truy hồi, không ý nào trích
+            Chỉ được tìm ra, không ý nào trích
           </span>
         )}
         {ref.retrievedRank !== null && (
-          <Badge variant="outline">Truy hồi #{ref.retrievedRank}</Badge>
+          <Badge variant="outline">Tìm được, hạng {ref.retrievedRank}</Badge>
         )}
       </div>
     </li>

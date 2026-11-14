@@ -26,10 +26,12 @@ import {
 import { VerdictBadge } from "@/components/verdict-badge"
 import { DEMO_RUN } from "@/lib/demo"
 import { formatScore, formatSeconds, formatUsd } from "@/lib/format"
+import { PAGE } from "@/lib/pages"
 import { questionText } from "@/lib/results"
 import { cn } from "@/lib/utils"
 import {
   CLAIM_LABEL,
+  GATE_MEANING,
   GATE_RULES,
   GATE_VERDICT,
   QUESTION_VERDICT,
@@ -63,19 +65,19 @@ export function DashboardView({ lawSource }: { lawSource: string }) {
       note: `${summary.dung} Đúng, ${summary.sai + summary.khong_can_cu + summary.loi} cần xem`,
     },
     {
-      label: "Faithfulness trung bình",
+      label: "Tỉ lệ ý đúng trung bình",
       value: formatScore(summary.faithfulness_tb),
-      note: "Tỉ lệ ý Đúng trong mỗi câu trả lời",
+      note: "Phần ý có căn cứ trong luật, tính trên mỗi câu (faithfulness)",
     },
     {
       label: "Tổng thời gian",
       value: formatSeconds(run.totalLatencyMs),
-      note: "Cả lượt, gồm truy hồi và judge",
+      note: "Cả lượt, gồm tìm Điều luật và AI chấm",
     },
     {
       label: "Tổng chi phí",
       value: formatUsd(run.totalCostUsd),
-      note: "Cả lượt, tiền gọi mô hình judge",
+      note: "Cả lượt, tiền gọi AI chấm",
     },
   ]
 
@@ -87,11 +89,11 @@ export function DashboardView({ lawSource }: { lawSource: string }) {
     <PageShell>
       <PageHeader
         eyebrow={sourceLabel(source)}
-        title="Tổng quan"
+        title={PAGE.dashboard}
         description={
           source.kind === "demo"
-            ? "Cổng kiểm định quyết định câu trả lời của chatbot có được đưa tới người dùng hay không. Đây là kết quả trên bộ câu mẫu do nhóm soạn."
-            : "Cổng kiểm định quyết định câu trả lời của chatbot có được đưa tới người dùng hay không. Đây là kết quả trong tệp bạn vừa mở."
+            ? "lexgate kiểm từng câu trả lời của chatbot với Bộ luật Lao động, rồi cho biết chatbot đã đủ tin cậy để đưa tới người dùng chưa. Đây là kết quả trên bộ câu mẫu do nhóm soạn."
+            : "lexgate kiểm từng câu trả lời của chatbot với Bộ luật Lao động, rồi cho biết chatbot đã đủ tin cậy để đưa tới người dùng chưa. Đây là kết quả trong tệp bạn vừa mở."
         }
         actions={
           <>
@@ -106,7 +108,7 @@ export function DashboardView({ lawSource }: { lawSource: string }) {
               className={cn(buttonVariants({ size: "lg" }))}
             >
               <FolderOpen data-icon="inline-start" aria-hidden />
-              Mở results.json
+              {PAGE.open}
             </Link>
           </>
         }
@@ -117,15 +119,19 @@ export function DashboardView({ lawSource }: { lawSource: string }) {
           <CardHeader>
             <CardTitle>Cổng kiểm định</CardTitle>
             <CardDescription>
-              Xét từ trên xuống, quy tắc đầu tiên khớp quyết định.
+              Xét lần lượt từ trên xuống, dòng đầu tiên đúng sẽ quyết định.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
               <VerdictBadge verdict={gate} size="lg" className="self-start" />
+              <p className="leading-relaxed font-medium text-pretty">
+                {GATE_MEANING[summary.cong]}
+              </p>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                {summary.sai} câu Sai, {summary.khong_can_cu} câu Không căn cứ,{" "}
-                {summary.loi} câu Lỗi trong {summary.so_cau} câu đã kiểm.
+                Trong {summary.so_cau} câu đã kiểm: {summary.sai} câu Sai,{" "}
+                {summary.khong_can_cu} câu Không căn cứ, {summary.loi} câu không
+                kiểm được.
               </p>
             </div>
             <ol className="flex flex-col gap-1.5">
@@ -208,11 +214,11 @@ export function DashboardView({ lawSource }: { lawSource: string }) {
       <div className="grid gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-7">
           <CardHeader>
-            <CardTitle>Cần xem lại</CardTitle>
+            <CardTitle>Những câu chưa Đúng</CardTitle>
             <CardDescription>
               {attention.length
-                ? "Câu bị chặn ở cổng, kèm ý đầu tiên sai hoặc không có căn cứ."
-                : "Không có câu nào bị chặn: mọi câu đều Đúng."}
+                ? "Mỗi câu kèm ý có vấn đề đầu tiên. Bấm vào để xem chi tiết."
+                : "Mọi câu đều Đúng, không có câu nào cần xem."}
             </CardDescription>
           </CardHeader>
           {attention.length > 0 && (
@@ -287,9 +293,9 @@ export function DashboardView({ lawSource }: { lawSource: string }) {
               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 text-sm">
                 <dt className="text-muted-foreground">Câu hỏi</dt>
                 <dd>{DEMO_RUN.questionSet}</dd>
-                <dt className="text-muted-foreground">Truy hồi</dt>
+                <dt className="text-muted-foreground">Tìm Điều luật</dt>
                 <dd>{DEMO_RUN.retrieval}</dd>
-                <dt className="text-muted-foreground">Judge</dt>
+                <dt className="text-muted-foreground">AI chấm</dt>
                 <dd className="font-mono text-[0.8rem]">{DEMO_RUN.judge}</dd>
                 <dt className="text-muted-foreground">Văn bản luật</dt>
                 <dd>

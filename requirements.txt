@@ -10,3 +10,7 @@ python-dotenv==1.2.4
 litellm
 rank_bm25
 pytest
+
+# Chat API (api/server.py)
+fastapi
+uvicorn

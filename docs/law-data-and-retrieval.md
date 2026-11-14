@@ -14,12 +14,12 @@
   - `retrieve(query, k=5)`: tìm các điều liên quan nhất tới câu hỏi.
   - `get_article("Điều 35")`: lấy thẳng một điều theo số.
 - Kiểm tra nhanh trên 20 câu hỏi: **Hit@1 = 19/20, Hit@3 = 20/20, MRR = 0,975**.
-- Nạp lại index không bị nhân đôi. Mỗi lần dựng index mất khoảng **11 phút** trên CPU.
+- Nạp lại index không bị nhân đôi. **Vector đã embed sẵn được commit trong repo** (`data/law/dieu.BAAI__bge-m3.npz`, khoảng 0,8 MB). Sau khi `git pull`, dựng index chỉ mất **dưới 1 giây** và không cần model. Nếu không có file này, embed lại cả 220 điều trên CPU mất khoảng 11 phút.
 
 ### Mỗi người cần biết gì
 | Thành viên | Điều cần biết |
 |---|---|
-| **Vĩnh** (`core/audit.py`) | Gọi `retrieve()` để lấy căn cứ và `get_article()` để kiểm tra điều mà chatbot trích dẫn. Kết quả trả về là dict, xem mục 6. Không mở index từ 2 process cùng lúc (mục 8). |
+| **Vĩnh** (`core/audit.py`) | Gọi `retrieve()` để lấy căn cứ và `get_article()` để kiểm tra điều mà chatbot trích dẫn. Kết quả trả về là dict, xem mục 6. Không mở index từ 2 process cùng lúc (mục 8). Cần có model bge-m3 trên máy để embed câu hỏi (mục 7.1). |
 | **Khoa** (test set, `eval/`) | Luật là bản hợp nhất 2026: Điều 139 đã sửa (sinh con thứ hai được nghỉ **07 tháng**, hiệu lực 01/07/2026). Test set chỉ nên hỏi những gì Bộ luật trả lời được, vì nghị định chưa được index. Xem qua `data/test/retrieval_smoke.csv` để tránh trùng với test set kín. |
 | **Hiếu** (`app/`) | UI chỉ nên đọc `results.json`, không nạp model trong app. bge-m3 cùng torch tốn khoảng 2.5–3 GB RAM, nhiều khả năng vượt giới hạn của Streamlit Community Cloud. Muốn hiện toàn văn điều luật thì đọc `data/law/dieu.jsonl` (trường `noi_dung`). |
 | **Cả team** | Format "Law chunk" trong README đã đổi, theo đúng file của Vĩnh. Báo cả nhóm trước khi merge vào `develop`. |
@@ -60,10 +60,11 @@ data/law/dieu.jsonl                (220 dòng, 1 dòng = 1 điều)
   │  python -m core.ingest data/law/dieu.jsonl
   │    - kiểm tra trường bắt buộc, chunk_id không trùng, chuẩn hoá Unicode NFC
   │    - ghép văn bản embed = "Bộ luật Lao động\nChương …\nMục …\n" + noi_dung
-  │    - bge-m3 → vector 1024 chiều, đã chuẩn hoá, metric cosine
-  │    - upsert vào Qdrant với id = uuid5(chunk_id); xoá điểm có chunk_id không còn trong file
+  │    - lấy vector từ cache data/law/dieu.BAAI__bge-m3.npz nếu hash văn bản embed khớp;
+  │      chỉ điều mới hoặc đã sửa mới được embed bằng bge-m3 (1024 chiều, đã chuẩn hoá), rồi ghi lại cache
+  │    - upsert vào Qdrant (metric cosine) với id = uuid5(chunk_id); xoá điểm có chunk_id không còn trong file
   ▼
-.qdrant/  (collection labor_code__bge-m3__dieu, git-ignored, mỗi máy tự dựng)
+.qdrant/  (collection labor_code__bge-m3__dieu, git-ignored, mỗi máy tự dựng từ cache trong vài giây)
   │
   ▼
 core/retrieve.py: retrieve(query, k), get_article(dieu)
@@ -164,9 +165,21 @@ python -m core.ingest data/law/dieu.jsonl
 
 | Bước | Thời gian đo được |
 |---|---|
-| Lần đầu chạy ingest (gồm tải bge-m3 khoảng 2.2 GB vào cache Hugging Face) | khoảng 16,5 phút |
-| Các lần ingest sau (chỉ embed 220 điều trên CPU) | khoảng 11 phút |
+| Ingest khi đã có cache vector trong repo (trường hợp bình thường sau `git pull`) | **0,7 giây**, không nạp model |
+| Ingest khi sửa 1 điều trong `dieu.jsonl` (chỉ embed lại điều đó) | khoảng 15 giây |
+| Ingest không có cache, hoặc chạy với `--no-cache` (embed cả 220 điều trên CPU) | khoảng 11 phút |
+| Lần đầu tải bge-m3 vào cache Hugging Face | khoảng 4,3 GB, mạng chậm có thể mất trên 10 phút |
 | `check_retrieval` 20 câu (gồm cả nạp model) | khoảng 1 phút |
+
+### 7.1 Vector cache và model: ai cần gì
+- **Cache vector** `data/law/dieu.BAAI__bge-m3.npz` đã có trong git. Cache lưu `chunk_id`, hash của văn bản đem embed, vector float32 và tên model.
+  - Ingest dùng lại vector của mọi điều có hash khớp, chỉ embed điều mới hoặc đã sửa, rồi ghi lại cache.
+  - Ai sửa `dieu.jsonl` thì **commit luôn file `.npz` mới** cùng lúc.
+  - Đổi `EMBED_MODEL` thì cache cũ bị bỏ qua và một file mới được tạo theo tên model.
+- **Model bge-m3** vẫn bắt buộc với ai cần **truy vấn**: `retrieve()` phải embed câu hỏi bằng đúng model này. Tức là Vĩnh (audit) và Khoa (eval).
+  - Hiếu (UI chỉ đọc `results.json`) không cần model.
+  - Chỉ dựng index thì cũng không cần model.
+- **Mạng chậm:** thay vì tải 4,3 GB, chép thư mục `%USERPROFILE%\.cache\huggingface\hub\models--BAAI--bge-m3` từ máy đã có sang đúng đường dẫn đó trên máy mới (macOS/Linux: `~/.cache/huggingface/hub/`), rồi đặt `HF_HUB_OFFLINE=1`.
 
 Lệnh kiểm tra:
 ```bash
@@ -184,7 +197,7 @@ Nếu máy không có mạng sau lần tải đầu, đặt `HF_HUB_OFFLINE=1` �
 ## 8. Giới hạn và rủi ro đã biết
 
 1. **Qdrant local mode khoá thư mục `.qdrant/`.** Mỗi lúc chỉ một process mở được. Đang chạy `core.audit` thì không chạy `core.retrieve` hay Streamlit dùng chung index được. Khi lên FastAPI ở tuần 2, chuyển sang Qdrant server (Docker) bằng cách đặt `QDRANT_URL`.
-2. **Mỗi máy phải tự dựng index** (khoảng 11 phút) và tải model (2.2 GB). `.qdrant/` không commit. Có thể nén `.qdrant/` gửi cho nhau, nhưng vẫn phải có model để embed câu hỏi.
+2. **`.qdrant/` không commit, mỗi máy tự dựng**, nhưng nhờ cache vector chỉ mất dưới 1 giây. Phần nặng là model (khoảng 4,3 GB), chỉ người cần truy vấn mới phải có (mục 7.1). Nếu quên commit file `.npz` sau khi sửa `dieu.jsonl`, máy khác vẫn chạy đúng nhưng sẽ phải embed lại phần chênh lệch.
 3. **Chưa có nghị định**, nên câu hỏi về lương tối thiểu vùng hay cách tính trợ cấp chi tiết sẽ không tìm được căn cứ.
 4. **Bộ smoke test nhỏ** (20 câu, do người làm retrieval tự soạn, diễn đạt khá sát luật). Kết quả 19/20 chỉ cho thấy pipeline chạy đúng, chưa phải đánh giá chất lượng. Đánh giá thật dùng test set kín của Khoa.
 5. **Câu duy nhất không đứng đầu** (r18, "sa thải lao động nữ đang mang thai"): Điều 138 (quyền đơn phương chấm dứt, tạm hoãn HĐLĐ của lao động nữ mang thai) đứng trên Điều 137 và 37. Điều 138 cũng liên quan, nên judge vẫn nhận được đủ căn cứ trong top-5.
@@ -197,11 +210,11 @@ Nếu máy không có mạng sau lần tải đầu, đặt `HF_HUB_OFFLINE=1` �
 | File | Thay đổi |
 |---|---|
 | `core/vectordb.py` | **Mới.** Settings (đọc `.env`), class `Embedder`, `get_client()`, `point_id()` |
-| `core/ingest.py` | `build_index(law_path, recreate=False)` và CLI |
+| `core/ingest.py` | `build_index(law_path, recreate=False, use_cache=True)`, cache vector theo hash, và CLI (`--recreate`, `--no-cache`) |
 | `core/retrieve.py` | `retrieve()`, `get_article()` và CLI |
 | `scripts/split_law.py` | Script tách điều của Vĩnh (chép nguyên) |
 | `scripts/check_retrieval.py` | **Mới.** Đo Hit@1/3/5 và MRR, ghi trace |
-| `data/law/` | `18_VBHN-VPQH.doc`, `bo-luat-lao-dong-vbhn18.txt`, `dieu.jsonl` |
+| `data/law/` | `18_VBHN-VPQH.doc`, `bo-luat-lao-dong-vbhn18.txt`, `dieu.jsonl`, `dieu.BAAI__bge-m3.npz` (cache vector) |
 | `data/test/retrieval_smoke.csv` | 20 câu dùng làm dev set cho retrieval (`id, cau_hoi, dieu_dung`, nhiều đáp án ngăn bằng `\|`) |
 | `requirements.txt`, `.env.example` | Ghim version, cấu hình mẫu |
 | `README.md` | Phiên bản luật, flow, sơ đồ repo, lệnh chạy, format chunk |
@@ -225,5 +238,6 @@ Không commit: `.qdrant/`, `.venv/`, `.env`, `results*.json` (đã có trong `.g
 - Đừng đổi tên hay xoá trường trong `dieu.jsonl` / payload: `audit.py`, `eval/` và UI phụ thuộc vào chúng. Muốn thêm thì thêm trường mới, và báo team.
 - Đổi embedding model hoặc cách chunk thì **đổi `QDRANT_COLLECTION`** (vd `labor_code__<model>__<chunk>`), đừng ghi đè collection hiện có.
 - Mọi truy vấn phải dùng cùng model với lúc ingest (`embed_model` trong payload cho biết model nào).
+- Sửa `dieu.jsonl` thì chạy lại ingest và **commit cả file `.npz` đã cập nhật** trong cùng commit. Đừng sửa tay file `.npz`.
 - Không tạo câu hỏi kiểm tra từ test set kín (`data/test/test_set*.csv`, `answer_key*.csv`), vì các file đó cố tình không có trong repo.
 - Khi giải thích cho team, các con số trong file này (220 điều, 19/20, khoảng 11 phút) là số **đo thật ngày 14/11/2026** trên một máy Windows CPU. Máy khác sẽ cho thời gian khác.

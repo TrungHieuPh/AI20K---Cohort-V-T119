@@ -82,7 +82,8 @@ zero-one-lexgate/
     check_retrieval.py   Hit@k / MRR of retrieve() on a question -> article CSV
   docs/
     law-data-and-retrieval.md   law data, vector index and retrieve() API: decisions, results, open items
-  data/law/              18_VBHN-VPQH.doc (source), bo-luat-lao-dong-vbhn18.txt, dieu.jsonl
+  data/law/              18_VBHN-VPQH.doc (source), bo-luat-lao-dong-vbhn18.txt, dieu.jsonl,
+                         dieu.BAAI__bge-m3.npz (cached article vectors)
   data/test/             dev_set.csv, retrieval_smoke.csv
   .env.example           settings template; copy to .env
   requirements.txt
@@ -129,8 +130,12 @@ Tell the whole team before changing a shared data format (see [Data formats](#da
 
 ```bash
 # 1. Build the index from the law text
-#    (first run downloads BAAI/bge-m3, about 2.2 GB; later runs use the cache)
+#    Vectors are committed in data/law/dieu.BAAI__bge-m3.npz, so this takes about a second
+#    and does not load the model. Only new or edited articles are re-embedded.
 python -m core.ingest data/law/dieu.jsonl
+
+#    Querying needs BAAI/bge-m3 locally (about 4.3 GB, downloaded on first use).
+#    See docs/law-data-and-retrieval.md for copying the model cache on a slow network.
 
 #    Check retrieval: is the right article in the top 5?
 python -m core.retrieve "nghỉ việc phải báo trước bao nhiêu ngày"

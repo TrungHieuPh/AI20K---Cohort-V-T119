@@ -58,12 +58,11 @@ export function ProblemSection({ cases }: { cases: ProblemCase[] }) {
     <section
       id="problem"
       aria-labelledby="problem-title"
-      className="scroll-mt-16 border-t border-hero-border"
+      className="scroll-mt-16"
     >
       <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 lg:py-28">
         <SectionHeading
           id="problem-title"
-          index={1}
           eyebrow="Vấn đề"
           title="Chatbot sai luật vẫn trả lời trôi chảy, có cả số Điều."
           lead="Ba câu dưới đây nghe đều hợp lý. Câu trả lời là câu mẫu do nhóm soạn, cố tình cài lỗi; nhãn và đoạn luật bên cạnh là kết quả thật của bộ kiểm định."
@@ -73,15 +72,19 @@ export function ProblemSection({ cases }: { cases: ProblemCase[] }) {
           {cases.map((c) => (
             <li
               key={c.questionId}
-              className="grid gap-6 border-t border-hero-border py-9 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12 lg:py-11"
+              data-reveal
+              className="grid gap-6 border-hero-border py-9 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12 lg:py-11"
             >
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <span className="font-mono text-sm text-hero-muted">
+                  <span className="text-sm font-semibold text-hero-muted tabular-nums">
                     Câu #{c.questionId}
                   </span>
                   <h3 className="font-heading text-xl font-bold">{c.kind}</h3>
-                  <VerdictBadge verdict={CLAIM_LABEL[c.claim.nhan]} />
+                  <VerdictBadge
+                    verdict={CLAIM_LABEL[c.claim.nhan]}
+                    surface="dark"
+                  />
                 </div>
                 <p className="text-sm leading-relaxed text-pretty text-hero-muted">
                   <span className="font-semibold text-hero-foreground">
@@ -119,7 +122,7 @@ export function ProblemSection({ cases }: { cases: ProblemCase[] }) {
           {FRAMING.map(({ term, text }, i) => (
             <div key={term} className="flex flex-col gap-2">
               <dt className="flex items-baseline gap-2.5 font-heading text-lg font-bold">
-                <span className="font-mono text-xs font-normal text-hero-accent">
+                <span className="text-sm font-extrabold text-hero-accent tabular-nums">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 {term}
@@ -155,7 +158,7 @@ function LawSlip({
           >
             {law.heading}
           </Link>
-          <span className="font-mono text-[0.7rem] text-muted-foreground">
+          <span className="text-xs font-semibold text-muted-foreground">
             Chương {law.chapter}
           </span>
         </div>
@@ -184,7 +187,7 @@ function LawSlip({
         )}
       </div>
       <figcaption className="text-sm leading-relaxed text-pretty text-hero-muted">
-        <span className="font-mono text-xs text-hero-accent">{citation}</span>
+        <span className="font-semibold text-hero-accent">{citation}</span>
         <span aria-hidden> · </span>
         {explanation}
       </figcaption>
@@ -205,14 +208,14 @@ function NoGroundsSlip({
       <div className="flex items-start gap-3">
         <SearchX
           aria-hidden
-          className="mt-0.5 size-5 shrink-0 text-verdict-ungrounded-soft"
+          className="mt-0.5 size-5 shrink-0 text-hero-ungrounded"
         />
         <p className="leading-relaxed font-semibold text-pretty">
           {explanation}
         </p>
       </div>
       <figcaption className="flex flex-col gap-2">
-        <p className="font-mono text-xs text-hero-muted">
+        <p className="text-xs font-bold tracking-[0.08em] text-hero-muted uppercase">
           Đã đối chiếu {checked.length} Điều truy hồi được
         </p>
         <ul className="flex flex-wrap gap-2">
@@ -220,9 +223,9 @@ function NoGroundsSlip({
             <li key={a.dieu}>
               <Link
                 href={`/law/${a.dieu}`}
-                className="inline-flex items-baseline gap-1.5 rounded-md border border-hero-border px-2.5 py-1 text-sm transition-colors hover:border-hero-muted/60 hover:bg-hero-raised"
+                className="inline-flex items-baseline gap-2 rounded-md border border-hero-border bg-hero-raised px-2.5 py-1 text-sm transition-colors hover:border-hero-accent/50"
               >
-                <span className="font-mono text-xs text-hero-accent">
+                <span className="font-semibold text-hero-accent">
                   Điều {a.dieu}
                 </span>
                 <span className="text-hero-muted">{a.title}</span>

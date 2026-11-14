@@ -178,7 +178,7 @@ function ArticlePanel({
   return (
     <>
       <SheetHeader className="border-b pr-12">
-        <p className="font-mono text-[0.7rem] tracking-wider text-muted-foreground uppercase">
+        <p className="text-xs font-semibold text-muted-foreground">
           Chương {article.chuong} · {sentenceCase(article.ten_chuong)}
         </p>
         <SheetTitle className="text-lg leading-snug font-bold text-pretty">

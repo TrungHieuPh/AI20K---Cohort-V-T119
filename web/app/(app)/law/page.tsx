@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/empty"
 import { getArticles, getLawInfo } from "@/lib/data"
 import { sentenceCase, splitSection } from "@/lib/law"
+import { PAGE } from "@/lib/pages"
 import { searchArticles, type Segment } from "@/lib/search"
 import type { Article } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -30,7 +31,7 @@ export async function generateMetadata({
   searchParams,
 }: PageProps<"/law">): Promise<Metadata> {
   const query = readQuery((await searchParams).q)
-  return { title: query ? `Tìm “${query}” · Văn bản luật` : "Văn bản luật" }
+  return { title: query ? `Tìm “${query}” · ${PAGE.law}` : PAGE.law }
 }
 
 interface Chapter {
@@ -84,7 +85,7 @@ export default async function LawPage({ searchParams }: PageProps<"/law">) {
     <PageShell>
       <PageHeader
         eyebrow={law.source}
-        title="Văn bản luật"
+        title={PAGE.law}
         description={`${law.articles} Điều trong ${law.chapters} Chương. Tìm theo số Điều hoặc từ khóa, gõ không dấu cũng được.`}
       >
         <div className="flex flex-col gap-2 pt-2">
@@ -221,7 +222,7 @@ function Contents({ chapters }: { chapters: Chapter[] }) {
             className="flex scroll-mt-20 flex-col gap-4"
           >
             <header className="flex flex-col gap-1 border-b pb-3">
-              <p className="font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
+              <p className="text-sm font-semibold text-muted-foreground">
                 Chương {c.roman} · Điều {c.first}–{c.last}
               </p>
               <h2

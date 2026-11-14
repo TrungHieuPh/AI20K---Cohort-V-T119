@@ -138,6 +138,24 @@ function readClaim(y: unknown, at: string): Claim {
   }
 }
 
+/**
+ * Checks one answer audited live (POST /api/audit): an `audit_one` result, i.e. one
+ * results.json `cau` element without `id`. Same checks as a file, so a bad reply reads
+ * like a bad file.
+ */
+export function parseAuditedAnswer(
+  raw: unknown
+): { ok: true; question: AuditedQuestion } | { ok: false; error: string } {
+  try {
+    if (!isObject(raw))
+      throw new FormatError("Máy chủ không trả về một đối tượng JSON.")
+    return { ok: true, question: readQuestion({ ...raw, id: "vừa kiểm" }, 0) }
+  } catch (error) {
+    if (error instanceof FormatError) return { ok: false, error: error.message }
+    throw error
+  }
+}
+
 /** A claim the system relabelled, or whose evidence is not verbatim in the law. */
 export function isFlagged(claim: Claim): boolean {
   return claim.ha_nhan === true || claim.bang_chung_khop === false

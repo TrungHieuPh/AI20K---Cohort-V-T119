@@ -9,6 +9,7 @@ import {
   ProblemSection,
   type ProblemCase,
 } from "@/components/landing/problem-section"
+import { ScrollReveal } from "@/components/landing/scroll-reveal"
 import { WalkthroughSection } from "@/components/landing/walkthrough-section"
 import { getArticle, getArticles, getAuditRun, getLawInfo } from "@/lib/data"
 import {
@@ -193,6 +194,7 @@ export default async function LandingPage() {
       />
       <DemoResults run={run} />
       <FinalCta />
+      <ScrollReveal />
     </>
   )
 }

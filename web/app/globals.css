@@ -56,6 +56,9 @@
     --color-hero-accent: var(--hero-accent);
     --color-hero-border: var(--hero-border);
     --color-hero-wrong: var(--hero-wrong);
+    --color-hero-correct: var(--hero-correct);
+    --color-hero-ungrounded: var(--hero-ungrounded);
+    --color-hero-error: var(--hero-error);
     --color-paper: var(--paper);
     --color-paper-deep: var(--paper-deep);
     --color-paper-border: var(--paper-border);
@@ -126,8 +129,17 @@
     --hero-accent: oklch(0.83 0.085 245);
     --hero-border: oklch(1 0 0 / 12%);
     --hero-grid: oklch(1 0 0 / 5%);
-    /* The proofreader's wavy underline on navy: --verdict-wrong is too dark to see there. */
-    --hero-wrong: oklch(0.72 0.16 25);
+    /*
+     * Verdict colours on navy, where the --verdict-* inks are too dark to read. Each one
+     * as chip text on its own 14% tint over --hero-raised: wrong 5.0:1, ungrounded 7.9:1,
+     * correct 5.4:1. --hero-error is only for marks (chip text uses --hero-muted). In the
+     * landing's proportion bar (Sai, Không căn cứ, Đúng, Lỗi) adjacent pairs keep CVD
+     * ΔE >= 10.9 and normal-vision ΔE >= 19 (dataviz validate_palette.js, dark).
+     */
+    --hero-wrong: oklch(0.73 0.16 25);
+    --hero-ungrounded: oklch(0.87 0.14 92);
+    --hero-correct: oklch(0.72 0.15 152);
+    --hero-error: oklch(0.62 0.03 262);
     --paper: oklch(0.977 0.008 85);
     --paper-deep: oklch(0.955 0.014 85);
     --paper-border: oklch(0.9 0.018 80);
@@ -189,13 +201,105 @@
   body:has([data-surface="hero"]) {
     background-color: var(--hero);
   }
+  /*
+   * The app sits on the landing's warm paper: the page, muted fills and hairlines turn
+   * warm, cards stay white so a form or a claim stands off the page. Set on body so the
+   * panels portalled out of the app (article sheet, menus) read the same.
+   */
+  body:has([data-surface="app"]) {
+    --background: var(--paper);
+    --muted: var(--paper-deep);
+    --accent: var(--paper-deep);
+    --border: var(--paper-border);
+    --input: var(--paper-border);
+    background-color: var(--paper);
+  }
 }
 
-/* Faint blueprint grid behind the dark landing bands, fading out towards the edges. */
+/*
+ * Faint blueprint grid under the whole landing, header to footer. It is one layer on the
+ * page wrapper, not per section, so no band starts or stops it.
+ */
 @utility bg-grid {
   background-image:
     linear-gradient(to right, var(--hero-grid) 1px, transparent 1px),
     linear-gradient(to bottom, var(--hero-grid) 1px, transparent 1px);
   background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 40%, transparent 100%);
+  background-position: center top;
+}
+
+/*
+ * Landing blocks fade up the first time they scroll into view
+ * (components/landing/scroll-reveal.tsx). Only a block the script has marked pending is
+ * hidden, so without the script everything shows; never under reduced motion or in print.
+ */
+@media screen and (prefers-reduced-motion: no-preference) {
+  [data-reveal-state="pending"] {
+    opacity: 0;
+    translate: 0 1rem;
+  }
+  [data-reveal-state="shown"] {
+    transition:
+      opacity 500ms ease-out var(--reveal-delay, 0ms),
+      translate 600ms cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
+  }
+}
+
+/*
+ * A short bar sweeping along its track, for work with no percentage to show (one audit
+ * request on /chat). Callers hide it under reduced motion; their label still says it runs.
+ */
+@keyframes indeterminate {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 300% 0;
+  }
+}
+
+@utility animate-indeterminate {
+  animation: indeterminate 1.3s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+/*
+ * Now and then a soft band of light crosses the landing header's way into the chat, to
+ * draw the eye without moving anything. The band runs under the label; it stays still
+ * under reduced motion.
+ */
+@keyframes gleam {
+  0%,
+  70% {
+    translate: -100% 0;
+  }
+  100% {
+    translate: 350% 0;
+  }
+}
+
+@utility animate-gleam {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  &::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    z-index: -1;
+    width: 40%;
+    translate: -100% 0;
+    pointer-events: none;
+    background: linear-gradient(
+      100deg,
+      transparent,
+      color-mix(in oklab, var(--hero-accent) 75%, transparent),
+      transparent
+    );
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    &::before {
+      animation: gleam 5s cubic-bezier(0.45, 0, 0.25, 1) 1.5s infinite;
+    }
+  }
 }

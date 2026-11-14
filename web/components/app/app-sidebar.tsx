@@ -9,11 +9,13 @@ import {
   LayoutDashboard,
   ListChecks,
   MessagesSquare,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react"
 
 import { formatLoadedAt, useResults } from "@/components/app/results-provider"
 import { DEMO_RUN } from "@/lib/demo"
+import { PAGE } from "@/lib/pages"
 
 import {
   Sidebar,
@@ -38,28 +40,32 @@ interface NavItem {
   exclude?: string[]
 }
 
+// Trying the chatbot comes first: it is what the MVP demo opens with.
 const NAV: { label: string; items: NavItem[] }[] = [
   {
-    label: "Kiểm định",
+    label: "Thử trực tiếp",
     items: [
-      { href: "/dashboard", label: "Tổng quan", icon: LayoutDashboard },
-      {
-        href: "/audit",
-        label: "Kiểm định",
-        icon: ListChecks,
-        exclude: ["/audit/open"],
-      },
-      { href: "/audit/open", label: "Mở kết quả", icon: FolderOpen },
-      { href: "/quality", label: "Chất lượng", icon: Gauge },
+      { href: "/chat", label: PAGE.chat, icon: MessagesSquare },
+      { href: "/check", label: PAGE.check, icon: ShieldCheck },
     ],
   },
   {
-    label: "Thử trực tiếp",
-    items: [{ href: "/chat", label: "Hỏi đáp", icon: MessagesSquare }],
+    label: "Kiểm định cả bộ câu",
+    items: [
+      { href: "/dashboard", label: PAGE.dashboard, icon: LayoutDashboard },
+      {
+        href: "/audit",
+        label: PAGE.audit,
+        icon: ListChecks,
+        exclude: ["/audit/open"],
+      },
+      { href: "/quality", label: PAGE.quality, icon: Gauge },
+      { href: "/audit/open", label: PAGE.open, icon: FolderOpen },
+    ],
   },
   {
     label: "Tra cứu",
-    items: [{ href: "/law", label: "Văn bản luật", icon: BookOpen }],
+    items: [{ href: "/law", label: PAGE.law, icon: BookOpen }],
   },
 ]
 
@@ -144,11 +150,11 @@ export function AppSidebar({ lawSource }: { lawSource: string }) {
           {source.kind === "demo" ? (
             <>
               <p className="font-medium text-sidebar-accent-foreground">
-                Dữ liệu demo
+                Đang xem lượt demo
               </p>
               <p>
-                Kết quả thật của pipeline ngày {DEMO_RUN.date} trên bộ câu mẫu
-                do nhóm soạn, không phải bộ test kín.
+                Kết quả chạy thật ngày {DEMO_RUN.date} trên bộ câu mẫu do nhóm
+                soạn, không phải bộ test kín.
               </p>
             </>
           ) : (

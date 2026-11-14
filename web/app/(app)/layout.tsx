@@ -1,10 +1,11 @@
-import { AppSidebar } from "@/components/app/app-sidebar"
-import { AppTopbar } from "@/components/app/app-topbar"
+import { AppDock, MobileBar, ResultsTabs } from "@/components/app/app-nav"
 import { ResultsProvider } from "@/components/app/results-provider"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { getAuditRun, getLawInfo } from "@/lib/data"
 
-// App shell: navy sidebar (the landing's colour) beside a light working area.
+// Pages sit on warm paper (data-surface="app" in globals.css). The pages are reached from
+// a small dock floating on the left (a light strip with a menu on phones); main keeps
+// clear of the dock. The results tabs live here, not in each page, so they stay mounted
+// and their pill can slide between pages.
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const [law, demo] = await Promise.all([getLawInfo(), getAuditRun()])
   return (
@@ -15,19 +16,18 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       >
         Bỏ qua tới nội dung
       </a>
-      <SidebarProvider>
-        <AppSidebar lawSource={law.source} />
-        <SidebarInset>
-          <AppTopbar />
-          <div
-            id="content"
-            tabIndex={-1}
-            className="flex flex-1 flex-col outline-none"
-          >
-            {children}
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
+      <div data-surface="app" className="flex flex-1 flex-col bg-background">
+        <MobileBar lawSource={law.source} />
+        <AppDock />
+        <main
+          id="content"
+          tabIndex={-1}
+          className="flex flex-1 flex-col outline-none md:pl-20"
+        >
+          <ResultsTabs />
+          {children}
+        </main>
+      </div>
     </ResultsProvider>
   )
 }

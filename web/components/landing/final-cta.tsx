@@ -6,13 +6,9 @@ import { cn } from "@/lib/utils"
 
 export function FinalCta() {
   return (
-    <section
-      aria-labelledby="cta-title"
-      className="relative isolate overflow-hidden border-t border-hero-border"
-    >
-      <div aria-hidden className="absolute inset-0 -z-10 bg-grid" />
+    <section aria-labelledby="cta-title">
       <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-8 px-4 py-20 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:py-24">
-        <div className="flex max-w-2xl flex-col gap-4">
+        <div data-reveal className="flex max-w-2xl flex-col gap-4">
           <h2
             id="cta-title"
             className="font-heading text-[1.9rem] leading-[1.18] font-bold tracking-tight text-balance sm:text-[2.4rem]"
@@ -25,7 +21,7 @@ export function FinalCta() {
             không.
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div data-reveal className="flex flex-wrap gap-3">
           <Link
             href="/audit"
             className={cn(

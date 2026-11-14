@@ -59,6 +59,14 @@ export const GATE_RULES: { when: string; gate: GateVerdict }[] = [
   { when: "Mọi câu đều Đúng", gate: "DAT" },
 ]
 
+/** What each gate verdict means for shipping the chatbot, in plain words. */
+export const GATE_MEANING: Record<GateVerdict, string> = {
+  DAT: "Có thể đưa chatbot tới người dùng.",
+  CAN_XEM_LAI:
+    "Chưa nên đưa tới người dùng khi chưa có người đọc lại các câu bị đánh dấu.",
+  KHONG_DAT: "Chưa được đưa tới người dùng: có câu trả lời trái luật.",
+}
+
 /** The rule behind a reported gate verdict, for "why" next to the verdict. */
 export function gateRuleFor(gate: GateVerdict) {
   return GATE_RULES.find((r) => r.gate === gate)
@@ -69,7 +77,7 @@ export const QUESTION_RULES: { when: string; verdict: QuestionVerdict }[] = [
   { when: "Có ít nhất một ý Trái luật", verdict: "SAI" },
   { when: "Có ý Không căn cứ, không có ý Trái luật", verdict: "KHONG_CAN_CU" },
   { when: "Mọi ý đều Đúng", verdict: "DUNG" },
-  { when: "Pipeline gặp lỗi khi chấm câu này", verdict: "LOI" },
+  { when: "Hệ thống gặp lỗi khi chấm câu này", verdict: "LOI" },
 ]
 
 export function questionRuleFor(verdict: QuestionVerdict) {

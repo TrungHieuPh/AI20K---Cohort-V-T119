@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/card"
 import { VerdictBadge } from "@/components/verdict-badge"
 import { formatScore } from "@/lib/format"
+import { PAGE } from "@/lib/pages"
 import { cn } from "@/lib/utils"
 import { GATE_VERDICT } from "@/lib/verdicts"
 
@@ -59,7 +60,7 @@ export function OpenResults() {
       setState({
         kind: "error",
         name: file.name,
-        message: "Tệp lớn hơn 5 MB, không giống một results.json.",
+        message: "Tệp lớn hơn 5 MB, không giống một tệp kết quả.",
       })
       return
     }
@@ -83,8 +84,8 @@ export function OpenResults() {
     <PageShell>
       <PageHeader
         eyebrow={sourceLabel(source)}
-        title="Mở kết quả"
-        description="Xem một tệp results.json do bộ kiểm định ghi ra thay cho lượt demo. Tệp chỉ được đọc trong trình duyệt này, không gửi đi đâu."
+        title={PAGE.open}
+        description="Xem tệp kết quả (results.json) do lexgate ghi ra, thay cho lượt demo. Tệp chỉ được đọc trong trình duyệt này, không gửi đi đâu."
       />
 
       <div className="grid gap-6 lg:grid-cols-12">
@@ -109,12 +110,12 @@ export function OpenResults() {
             <span className="grid size-12 place-items-center rounded-full bg-muted ring-1 ring-border">
               <Upload aria-hidden className="size-5 text-muted-foreground" />
             </span>
-            <span className="font-medium">Chọn tệp results.json</span>
+            <span className="font-medium">Chọn tệp kết quả</span>
             <span
               id={hintId}
               className="max-w-sm text-sm text-pretty text-muted-foreground"
             >
-              Bấm để chọn, hoặc kéo thả tệp vào đây. Tệp JSON, tối đa 5 MB.
+              Bấm để chọn, hoặc kéo thả tệp results.json vào đây. Tối đa 5 MB.
             </span>
             <input
               id={inputId}
@@ -179,7 +180,7 @@ export function OpenResults() {
                   <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                     <VerdictBadge verdict={GATE_VERDICT[summary.cong]} />
                     <span>
-                      {summary.so_cau} câu · faithfulness{" "}
+                      {summary.so_cau} câu · ý đúng{" "}
                       {formatScore(summary.faithfulness_tb)}
                       {source.kind === "file" &&
                         ` · mở lúc ${formatLoadedAt(source.loadedAt)}`}
@@ -194,7 +195,7 @@ export function OpenResults() {
                   </Button>
                 )}
                 <Link href="/dashboard" className={cn(buttonVariants())}>
-                  Xem tổng quan
+                  Xem kết quả tổng
                   <ArrowRight data-icon="inline-end" aria-hidden />
                 </Link>
               </div>
@@ -204,7 +205,7 @@ export function OpenResults() {
 
         <Card className="lg:col-span-5">
           <CardHeader>
-            <CardTitle>Tạo results.json</CardTitle>
+            <CardTitle>Tạo tệp kết quả</CardTitle>
             <CardDescription>
               Chạy bộ kiểm định trên máy, rồi mở tệp nó ghi ra.
             </CardDescription>
@@ -223,9 +224,9 @@ export function OpenResults() {
               .
             </p>
             <p className="leading-relaxed text-muted-foreground">
-              Chạy kiểm định ngay trên web cần backend (FastAPI), sẽ có ở giai
-              đoạn sau. Tệp cũ chưa có nội dung câu hỏi vẫn mở được, chỉ hiện số
-              câu.
+              Kiểm định cả bộ câu ngay trên web, không cần dòng lệnh, sẽ có ở
+              giai đoạn sau. Tệp cũ chưa có nội dung câu hỏi vẫn mở được, chỉ
+              hiện số câu.
             </p>
           </CardContent>
         </Card>

@@ -16,31 +16,32 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { PAGE } from "@/lib/pages"
 
 type Crumb = { label: string; href?: string }
 
 function crumbsFor(pathname: string): Crumb[] {
   const [section, id] = pathname.split("/").filter(Boolean)
   switch (section) {
+    case "chat":
+      return [{ label: PAGE.chat }]
+    case "check":
+      return [{ label: PAGE.check }]
     case "dashboard":
-      return [{ label: "Tổng quan" }]
+      return [{ label: PAGE.dashboard }]
     case "audit":
-      if (!id) return [{ label: "Kiểm định" }]
+      if (!id) return [{ label: PAGE.audit }]
+      if (id === "open") return [{ label: PAGE.open }]
       return [
-        { label: "Kiểm định", href: "/audit" },
-        {
-          label:
-            id === "open" ? "Mở kết quả" : `Câu #${decodeURIComponent(id)}`,
-        },
+        { label: PAGE.audit, href: "/audit" },
+        { label: `Câu #${decodeURIComponent(id)}` },
       ]
     case "quality":
-      return [{ label: "Chất lượng" }]
-    case "chat":
-      return [{ label: "Hỏi đáp" }]
+      return [{ label: PAGE.quality }]
     case "law":
-      if (!id) return [{ label: "Văn bản luật" }]
+      if (!id) return [{ label: PAGE.law }]
       return [
-        { label: "Văn bản luật", href: "/law" },
+        { label: PAGE.law, href: "/law" },
         { label: `Điều ${decodeURIComponent(id)}` },
       ]
     default:
@@ -93,7 +94,7 @@ export function AppTopbar() {
           className="ml-auto max-w-40 shrink-0 text-muted-foreground sm:max-w-64"
         >
           <span className="truncate">
-            {source.kind === "demo" ? "Dữ liệu demo" : `Tệp: ${source.name}`}
+            {source.kind === "demo" ? "Lượt demo" : `Tệp: ${source.name}`}
           </span>
         </Badge>
       )}

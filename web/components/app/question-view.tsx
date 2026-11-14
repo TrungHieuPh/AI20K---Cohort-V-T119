@@ -115,8 +115,8 @@ export function QuestionView({
               Không có câu #{questionId} trong lượt đang xem
             </EmptyTitle>
             <EmptyDescription>
-              Đang xem: {sourceLabel(source)}. Câu này có thể thuộc một tệp
-              results.json khác.
+              Đang xem: {sourceLabel(source)}. Câu này có thể thuộc một tệp kết
+              quả khác.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent className="flex-row flex-wrap justify-center">
@@ -130,7 +130,7 @@ export function QuestionView({
               href="/audit/open"
               className={cn(buttonVariants({ variant: "outline" }))}
             >
-              Mở results.json khác
+              Mở tệp kết quả khác
             </Link>
           </EmptyContent>
         </Empty>
@@ -156,7 +156,7 @@ export function QuestionView({
       .flatMap((c) => evidencePhrases(c.bang_chung))
 
   const metrics = [
-    { term: "Faithfulness", value: formatScore(q.faithfulness) },
+    { term: "Tỉ lệ ý đúng", value: formatScore(q.faithfulness) },
     { term: "Số ý", value: String(q.cac_y.length) },
     { term: "Thời gian", value: formatSeconds(q.thoi_gian_ms) },
     { term: "Chi phí", value: formatUsd(q.chi_phi_usd) },
@@ -233,7 +233,7 @@ export function QuestionView({
       {q.loi && (
         <Alert role="note">
           <CircleAlert aria-hidden />
-          <AlertTitle>Pipeline lỗi ở câu này</AlertTitle>
+          <AlertTitle>Không kiểm được câu này</AlertTitle>
           <AlertDescription>{q.loi}</AlertDescription>
         </Alert>
       )}
@@ -249,7 +249,7 @@ export function QuestionView({
           {q.cau_tra_loi && q.cac_y.length > 0 && (
             <CardDescription>
               {marked
-                ? "Phần gạch chân là ý được chấm riêng; số nhỏ dẫn tới ý đó ở bên dưới."
+                ? "Mỗi phần gạch chân là một ý được chấm riêng. Bấm số nhỏ để xuống ý đó."
                 : `Câu trả lời được tách thành ${q.cac_y.length} ý để chấm riêng ở bên dưới.`}
             </CardDescription>
           )}
@@ -271,7 +271,7 @@ export function QuestionView({
 
       <section aria-labelledby="claims-title" className="flex flex-col gap-3">
         <SectionLabel id="claims-title">
-          Đối chiếu từng ý · {q.cac_y.length} ý
+          So từng ý với luật ({q.cac_y.length} ý)
         </SectionLabel>
         {q.cac_y.length ? (
           <ol className="flex flex-col gap-4">
@@ -297,8 +297,8 @@ export function QuestionView({
               <EmptyTitle>Chưa có ý nào được chấm</EmptyTitle>
               <EmptyDescription>
                 {q.loi
-                  ? "Câu này lỗi trước khi judge kịp chấm."
-                  : "Judge không tách được ý nào từ câu trả lời này."}
+                  ? "Câu này gặp lỗi trước khi AI chấm kịp chấm."
+                  : "AI chấm không tách được ý nào từ câu trả lời này."}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -312,11 +312,11 @@ export function QuestionView({
         >
           <div className="flex flex-col gap-1">
             <SectionLabel id="retrieved-title">
-              Điều truy hồi · top {retrieved.length}
+              {retrieved.length} Điều luật tìm được
             </SectionLabel>
             <p className="text-sm text-muted-foreground">
-              Bộ truy hồi đưa {retrieved.length} Điều này cho judge làm căn cứ,
-              xếp theo độ gần với câu hỏi. Bấm để đọc toàn văn.
+              lexgate tìm {retrieved.length} Điều gần với câu hỏi nhất và đưa
+              cho AI chấm làm căn cứ. Bấm vào một Điều để đọc toàn văn.
             </p>
           </div>
           <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -377,7 +377,7 @@ export function QuestionView({
           {citedNotRetrieved.length > 0 && (
             <p className="text-sm text-muted-foreground">
               {citedNotRetrieved.map((d) => `Điều ${d}`).join(", ")} được trích
-              nhưng không nằm trong các Điều truy hồi.
+              nhưng không nằm trong các Điều tìm được.
             </p>
           )}
         </section>

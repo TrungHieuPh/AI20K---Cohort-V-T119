@@ -1,12 +1,8 @@
 import { cn } from "@/lib/utils"
 
-/**
- * "§ 1 · Vấn đề" eyebrow, title and lead, numbered like the sections of a statute.
- * Without `index` the eyebrow stands alone (the walkthrough, which is not a section).
- */
+/** A section's eyebrow ("Vấn đề"), title and lead. */
 export function SectionHeading({
   id,
-  index,
   eyebrow,
   title,
   lead,
@@ -14,16 +10,14 @@ export function SectionHeading({
 }: {
   /** Put on the h2, for aria-labelledby on the section. */
   id?: string
-  index?: number
   eyebrow: React.ReactNode
   title: string
   lead?: React.ReactNode
   className?: string
 }) {
   return (
-    <div className={cn("flex max-w-3xl flex-col gap-4", className)}>
-      <p className="font-mono text-xs font-medium tracking-[0.14em] text-hero-accent uppercase">
-        {index !== undefined && <>§ {index} · </>}
+    <div data-reveal className={cn("flex max-w-3xl flex-col gap-4", className)}>
+      <p className="text-sm font-bold tracking-[0.08em] text-hero-accent uppercase">
         {eyebrow}
       </p>
       <h2

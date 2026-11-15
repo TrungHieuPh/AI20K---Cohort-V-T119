@@ -239,6 +239,41 @@ Allowed values:
 - `tong_ket.faithfulness_tb`: mean `faithfulness` over the answers that have one (answers with `LOI` are skipped), rounded to 2 decimals; `null` if none has a value. It reads as "share of claims that have a basis in the law text", not as a legal-correctness score: `TRAI_LUAT` and `KHONG_CAN_CU` claims both count as unsupported.
 - `tong_ket.cong`: `KHONG_DAT` (some answer is `SAI`), `CAN_XEM_LAI` (no `SAI`, but some answer is `KHONG_CAN_CU` or `LOI`), `DAT` (every answer is `DUNG`).
 
+### Redline output (`core/redline.py`)
+
+`python -m core.redline van_ban.txt [--cau-hoi "..."] [--out results_redline.json]` checks a free text written by AI
+(max 5,000 characters; the question is optional). The text is split into paragraphs, each paragraph is retrieved and
+judged on its own. Real sample: [`mock/mock_redline.json`](mock/mock_redline.json) from
+[`data/demo/redline_mau.txt`](data/demo/redline_mau.txt). Separate from `results.json`; the audit format above is unchanged.
+
+```json
+{
+  "van_ban": "…full input text…",
+  "cau_hoi": "",
+  "phien_ban_luat": "Bộ luật Lao động – VBHN 18/VBHN-VPQH ngày 12/02/2026",
+  "cac_doan": [
+    {
+      "doan_so": 2, "bat_dau": 99, "ket_thuc": 200,
+      "doan_goc": "vị trí kỹ sư phần mềm yêu cầu bằng đại học, công ty được thỏa thuận thời gian thử việc tối đa 90 ngày",
+      "noi_dung": "…", "nhan": "TRAI_LUAT", "mau": "do",
+      "trich_dan": "Điều 25 khoản 2", "bang_chung": "Không quá 60 ngày …", "giai_thich": "…"
+    }
+  ],
+  "doan_loi": [],
+  "dieu_truy_hoi": ["dieu-25", "dieu-35"],
+  "tong_ket": {"so_doan_van": 6, "so_y": 7, "so_do": 4, "so_vang": 1, "so_dung": 2, "so_khong_dinh_vi": 0,
+               "so_doan_loi": 0, "cong": "KHONG_DAT", "thoi_gian_ms": 6218, "chi_phi_usd": 0.0054}
+}
+```
+
+Allowed values:
+- `cac_doan[].nhan`: `DUNG`, `TRAI_LUAT`, `KHONG_CAN_CU`, `MO_HO` (ambiguous: can be read two ways, one of them against the law). `MO_HO` exists only in redline output.
+- `cac_doan[].mau`: `do` for `TRAI_LUAT` and `KHONG_CAN_CU`, `vang` for `MO_HO`, `null` for `DUNG` (not highlighted).
+- `cac_doan[].bat_dau`, `ket_thuc`: character offsets in `van_ban` (`van_ban.slice(bat_dau, ket_thuc) === doan_goc`), computed by code, never taken from the LLM. `null` with `khong_dinh_vi: true` when the quoted span was not found in the text: show the claim, do not highlight. Sorted by position; spans may overlap.
+- `ha_nhan`, `bang_chung_khop`: same meaning as in `results.json`.
+- `doan_loi[]`: paragraphs that failed twice (`doan_so`, `bat_dau`, `ket_thuc`, `loi`). If every paragraph fails the command errors instead.
+- `tong_ket.cong`: `KHONG_DAT` (some `TRAI_LUAT`), `CAN_XEM_LAI` (no `TRAI_LUAT`, but some `KHONG_CAN_CU`, `MO_HO` or failed paragraph), `DAT` otherwise.
+
 ## Evaluation
 
 The team tunes on one set and reports on another, so the reported numbers are not fitted to the test questions.
